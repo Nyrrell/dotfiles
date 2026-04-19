@@ -1,0 +1,38 @@
+# Copier ce fichier en local.conf et adapter les valeurs à la machine.
+# local.conf est ignoré par git.
+
+# --- Système ---
+LAN_SUBNET="192.168.1.0/24"
+
+# --- Backup / NAS ---
+BACKUP_HOST="CHANGEME"                          # hostname ou IP du NAS
+NAS_REMOTE_PATH="/"                             # chemin distant monté sur ~/nas (défaut: /)
+BACKUP_USER="$(whoami)"
+BACKUP_DEST="/stockage/backups/$(hostname)"
+STEAM_LIBRARY_PATH=""                           # ex: /game/SteamLibrary ; vide = skip
+
+BACKUP_DIRS=(
+    "$HOME/.local/share/Steam/userdata"
+    "$HOME/.local/share/Steam/config"
+    "$HOME/.local/share/keyrings"
+    "$HOME/.config/heroic"
+    "$HOME/.config/lutris"
+    "$HOME/.var/app/com.obsproject.Studio/config"
+)
+
+# --- Paquets machine-specific ---
+# Les groupes interactifs (obs, gaming…) sont dans packages/groups/*.conf
+OPTIONAL_PACMAN_PACKAGES=()
+OPTIONAL_AUR_PACKAGES=()                        # ex: (hyperhdr-git)
+OPTIONAL_FLATPAK_PACKAGES=()
+
+# --- Syncthing ---
+SYNC_FOLDERS=(
+    # format: "id|label|path|type|rescan_interval(optionnel, défaut 3600s)"
+    "keepass|KeePass|$HOME/.local/keepass/bdd|sendreceive|10"
+    "document|Documents|$HOME/Documents|sendreceive"
+)
+
+SYNC_INTRODUCERS=(
+    "label|XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX"
+)

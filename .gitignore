@@ -1,0 +1,23 @@
+# Clés SSH privées
+id_rsa
+id_ed25519
+id_ecdsa
+id_dsa
+*.pem
+*.key
+
+# Secrets
+.env
+.env.*
+
+# Config locale (infos NAS, device IDs Syncthing…)
+local.conf
+
+# OS
+.DS_Store
+Thumbs.db
+.idea
+
+# Editors
+*.swp
+*.swo

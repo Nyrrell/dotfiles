@@ -1,0 +1,11 @@
+[Trigger]
+Operation = Upgrade
+Operation = Install
+Operation = Remove
+Type = Package
+Target = *
+
+[Action]
+Description = Snapper post-transaction snapshot
+When = PostTransaction
+Exec = /usr/bin/snapper --no-dbus -c root create --cleanup-algorithm number --description "post-pacman"

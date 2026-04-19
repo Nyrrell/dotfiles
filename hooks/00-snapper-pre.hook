@@ -1,0 +1,12 @@
+[Trigger]
+Operation = Upgrade
+Operation = Install
+Operation = Remove
+Type = Package
+Target = *
+
+[Action]
+Description = Snapper pre-transaction snapshot
+When = PreTransaction
+Exec = /usr/bin/snapper --no-dbus -c root create --cleanup-algorithm number --description "pre-pacman"
+AbortOnFail

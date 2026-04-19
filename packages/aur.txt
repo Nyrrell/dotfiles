@@ -1,0 +1,4 @@
+gnome-extensions-cli
+brother-dcp1510
+brscan4
+jetbrains-toolbox
