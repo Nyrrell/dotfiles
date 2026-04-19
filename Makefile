@@ -31,6 +31,8 @@ install: ## Installation complète dans le bon ordre
 	@$(MAKE) gnome
 	@$(MAKE) syncthing
 	@$(MAKE) system
+	@echo ""
+	@echo "Installation terminée. Redémarre la session pour appliquer tous les changements."
 
 packages: ## Installe tous les paquets pacman + AUR
 	$(CHECK_GIT)
