@@ -21,7 +21,7 @@ clear_stow_conflicts() {
         local rel dest
         rel="${src#"$pkg"/}"
         dest="$HOME/$rel"
-        if [[ -f "$dest" && ! -L "$dest" ]]; then rm "$dest"; fi
+        if [[ -L "$dest" || ( -f "$dest" && ! -L "$dest" ) ]]; then rm "$dest"; fi
     done < <(find "$pkg" -type f)
 }
 
