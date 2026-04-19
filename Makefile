@@ -6,7 +6,23 @@ endif
 
 DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
+define CHECK_GIT
+@git fetch origin --quiet 2>/dev/null || true; \
+LOCAL=$$(git rev-parse HEAD 2>/dev/null); \
+REMOTE=$$(git rev-parse @{u} 2>/dev/null); \
+if [ -n "$$REMOTE" ] && [ "$$LOCAL" != "$$REMOTE" ]; then \
+	echo "[WARN] Le dépôt n'est pas à jour avec origin"; \
+	printf "  c) Continuer\n  u) Mettre à jour (git pull)\n  q) Abandonner\n"; \
+	read -rp "Choix [c/u/q] : " _git_answer; \
+	case "$$_git_answer" in \
+		u) git pull ;; \
+		q) exit 1 ;; \
+	esac; \
+fi
+endef
+
 install: ## Installation complète dans le bon ordre
+	$(CHECK_GIT)
 	@$(MAKE) ssh
 	@$(MAKE) packages
 	@$(MAKE) dotfiles
@@ -17,39 +33,51 @@ install: ## Installation complète dans le bon ordre
 	@$(MAKE) system
 
 packages: ## Installe tous les paquets pacman + AUR
+	$(CHECK_GIT)
 	@bash $(DIR)modules/02-packages.sh
 
 dotfiles: ## Déploie les configs via GNU Stow
+	$(CHECK_GIT)
 	@bash $(DIR)modules/03-dotfiles.sh
 
 fish: ## Configure Fish comme shell par défaut
+	$(CHECK_GIT)
 	@SHELL_CHOICE=fish bash $(DIR)modules/04-shell.sh
 
 zsh: ## Configure Zsh comme shell par défaut
+	$(CHECK_GIT)
 	@SHELL_CHOICE=zsh bash $(DIR)modules/04-shell.sh
 
 dev: ## Installe fnm + Node.js LTS + Corepack
+	$(CHECK_GIT)
 	@bash $(DIR)modules/05-dev.sh
 
 gnome: ## Restaure les settings GNOME via dconf
+	$(CHECK_GIT)
 	@bash $(DIR)modules/06-gnome.sh
 
 system: ## Config système : wake-on-lan, pare-feu, snapper (sudo demandé automatiquement)
+	$(CHECK_GIT)
 	@bash $(DIR)modules/07-system.sh
 
 syncthing: ## Configure les folders Syncthing (peers + KeePass, Documents...)
+	$(CHECK_GIT)
 	@bash $(DIR)modules/09-syncthing.sh
 
 ssh: ## Génère une clé SSH ed25519 si absente et affiche la clé publique
+	$(CHECK_GIT)
 	@bash $(DIR)modules/01-ssh.sh
 
 backup: ## Sauvegarde les données personnelles sur le NAS
+	$(CHECK_GIT)
 	@bash $(DIR)modules/08-backup.sh backup
 
 restore: ## Restaure les données personnelles depuis le NAS
+	$(CHECK_GIT)
 	@bash $(DIR)modules/08-backup.sh restore
 
 update: ## Sauvegarde les settings GNOME utiles (thème, extensions, clavier…)
+	$(CHECK_GIT)
 	@bash $(DIR)modules/update-gnome.sh
 
 lint: ## Lance shellcheck sur les modules
