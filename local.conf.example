@@ -18,6 +18,7 @@ BACKUP_DIRS=(
     "$HOME/.config/heroic"
     "$HOME/.config/lutris"
     "$HOME/.var/app/com.obsproject.Studio/config"
+    # "$HOME/.hyperhdr/db"                       # optionnel : HyperHDR
 )
 
 # --- Paquets machine-specific ---

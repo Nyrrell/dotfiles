@@ -80,15 +80,6 @@ case "$MODE" in
                 "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/steam-acf/"
         fi
 
-        if [[ -d "$HOME/.hyperhdr/db" ]]; then
-            echo "  → HyperHDR config"
-            # shellcheck disable=SC2029
-            ssh "${BACKUP_USER}@${BACKUP_HOST}" "mkdir -p '${BACKUP_DEST}/.hyperhdr/db'"
-            rsync "${RSYNC_OPTS[@]}" \
-                "$HOME/.hyperhdr/db/" \
-                "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/.hyperhdr/db/"
-        fi
-
         echo "Backup terminé."
         ;;
     restore)
@@ -108,14 +99,6 @@ case "$MODE" in
                 "${STEAM_LIBRARY_PATH}/steamapps/"
         fi
 
-        # shellcheck disable=SC2029
-        if ssh "${BACKUP_USER}@${BACKUP_HOST}" "test -d '${BACKUP_DEST}/.hyperhdr/db'" 2>/dev/null; then
-            echo "  ← HyperHDR config"
-            mkdir -p "$HOME/.hyperhdr/db"
-            rsync "${RSYNC_OPTS[@]}" \
-                "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/.hyperhdr/db/" \
-                "$HOME/.hyperhdr/db/"
-        fi
 
         echo "Restore terminé."
         ;;

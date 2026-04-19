@@ -25,13 +25,20 @@ clear_stow_conflicts() {
     done < <(find "$pkg" -type f)
 }
 
-for pkg in fish zsh git environment profile systemd ssh mimeapps bin; do
+for pkg in fish zsh git environment profile systemd ssh mimeapps; do
     if [[ -d "$pkg" ]]; then
         echo "Stow: $pkg"
         clear_stow_conflicts "$pkg"
         stow --restow --no-folding --target="$HOME" "$pkg"
     fi
 done
+
+if command -v hyperhdr &>/dev/null; then
+    echo "Stow: hyperhdr"
+    clear_stow_conflicts hyperhdr
+    stow --restow --no-folding --target="$HOME" hyperhdr
+    systemctl --user enable hyperhdr.service 2>/dev/null || true
+fi
 
 [[ -f "$HOME/.ssh/config" ]] && chmod 600 "$HOME/.ssh/config"
 chmod -R +x "$HOME/.local/share/bin/" 2>/dev/null || true
@@ -42,8 +49,6 @@ if ! echo "DOTFILES_DIR=$SCRIPT_DIR" > "$HOME/.config/dotfiles.env" 2>/dev/null;
     echo "[WARN] Impossible d'écrire ~/.config/dotfiles.env"
     echo "       Lance : sudo chown -R $(whoami):$(whoami) ~/.config"
 fi
-
-systemctl --user enable hyperhdr.service 2>/dev/null || true
 systemctl --user enable --now backup.timer 2>/dev/null || true
 systemctl --user enable --now syncthing.service 2>/dev/null || true
 
