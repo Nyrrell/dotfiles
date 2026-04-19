@@ -69,18 +69,18 @@ if ! command -v ufw &>/dev/null; then
     pacman -S --needed --noconfirm ufw
 fi
 
-# Reset uniquement si ufw n'est pas déjà configuré, pour ne pas écraser des règles existantes
-if ufw status | grep -q "Status: inactive"; then
+if ufw status | grep -q "Status: inactive" && [[ $(ufw show added 2>/dev/null | wc -l) -eq 0 ]]; then
     ufw --force reset
     ufw default deny incoming
     ufw default allow outgoing
-    ufw allow from "$LAN" to any port 22 proto tcp comment "SSH LAN"
-    ufw allow 22000/tcp comment "Syncthing sync"
-    ufw allow 22000/udp comment "Syncthing sync"
-    ufw allow 21027/udp comment "Syncthing découverte locale"
-    ufw --force enable
-else
-    echo "  ufw déjà actif — règles existantes préservées (utilise 'ufw reset' manuellement pour repartir de zéro)"
+fi
+ufw allow from "$LAN" to any port 22 proto tcp comment "SSH LAN"
+ufw allow 22000/tcp comment "Syncthing sync"
+ufw allow 22000/udp comment "Syncthing sync"
+ufw allow 21027/udp comment "Syncthing découverte locale"
+if ufw status | grep -q "Status: inactive"; then
+    read -rp "  ufw est inactif — l'activer maintenant ? [y/N] " _answer
+    [[ "${_answer,,}" == "y" ]] && ufw --force enable
 fi
 systemctl enable ufw
 ufw status verbose
