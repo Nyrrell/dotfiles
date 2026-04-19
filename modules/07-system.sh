@@ -18,9 +18,14 @@ source "$SCRIPT_DIR/local.conf"
 
 # --- Wake-on-LAN ---
 echo "==> Wake-on-LAN"
-cp "$SCRIPT_DIR/systemd/system/wake-on-lan.service" /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable --now wake-on-lan.service || true
+read -rp "  Activer Wake-on-LAN ? (filaire uniquement) [y/N] " _wol_answer
+if [[ "${_wol_answer,,}" == "y" ]]; then
+    cp "$SCRIPT_DIR/systemd/system/wake-on-lan.service" /etc/systemd/system/
+    systemctl daemon-reload
+    systemctl enable --now wake-on-lan.service || true
+else
+    echo "  [SKIP] Wake-on-LAN ignoré"
+fi
 
 # --- Mount NAS (system automount) ---
 echo "==> NAS automount"
@@ -39,6 +44,14 @@ else
     # Activer allow_other dans fuse pour les mounts système
     if [[ -f /etc/fuse.conf ]] && ! grep -q "^user_allow_other" /etc/fuse.conf; then
         echo "user_allow_other" >> /etc/fuse.conf
+    fi
+
+    if systemctl is-active --quiet "${NAS_UNIT}.automount" 2>/dev/null; then
+        systemctl stop "${NAS_UNIT}.automount" || true
+        systemctl disable "${NAS_UNIT}.automount" || true
+    fi
+    if systemctl is-active --quiet "${NAS_UNIT}.mount" 2>/dev/null; then
+        systemctl stop "${NAS_UNIT}.mount" || true
     fi
 
     mkdir -p "$NAS_MOUNT_PATH"
