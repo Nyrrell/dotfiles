@@ -63,43 +63,83 @@ restore_dir() {
         echo "  [SKIP] $rel (absent du NAS)"
 }
 
+backup_steam() {
+    if [[ -n "${STEAM_LIBRARY_PATH:-}" && -d "${STEAM_LIBRARY_PATH}/steamapps" ]]; then
+        echo "  → manifestes Steam (.acf)"
+        # shellcheck disable=SC2029
+        ssh "${BACKUP_USER}@${BACKUP_HOST}" "mkdir -p '${BACKUP_DEST}/steam-acf'"
+        rsync "${RSYNC_OPTS[@]}" --include="*.acf" --exclude="*" \
+            "${STEAM_LIBRARY_PATH}/steamapps/" \
+            "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/steam-acf/"
+    fi
+}
+
+restore_steam() {
+    # shellcheck disable=SC2029
+    if [[ -n "${STEAM_LIBRARY_PATH:-}" ]] && \
+       ssh "${BACKUP_USER}@${BACKUP_HOST}" "test -d '${BACKUP_DEST}/steam-acf'" 2>/dev/null; then
+        echo "  ← manifestes Steam (.acf)"
+        mkdir -p "${STEAM_LIBRARY_PATH}/steamapps"
+        rsync "${RSYNC_OPTS[@]}" \
+            "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/steam-acf/" \
+            "${STEAM_LIBRARY_PATH}/steamapps/"
+    fi
+}
+
+# Construire la liste des items
+declare -a ALL_ITEMS=()
+declare -a ALL_LABELS=()
+for dir in "${BACKUP_DIRS[@]}"; do
+    ALL_ITEMS+=("dir:$dir")
+    ALL_LABELS+=("${dir#"$HOME"/}")
+done
+if [[ -n "${STEAM_LIBRARY_PATH:-}" ]]; then
+    ALL_ITEMS+=("steam")
+    ALL_LABELS+=("manifestes Steam (.acf)")
+fi
+
+# Menu de sélection
+echo ""
+echo "  0) Tout"
+for i in "${!ALL_LABELS[@]}"; do
+    echo "  $((i+1))) ${ALL_LABELS[$i]}"
+done
+echo ""
+read -rp "Choix [0-${#ALL_LABELS[@]}] : " choice
+
+if [[ ! "$choice" =~ ^[0-9]+$ ]] || (( choice > ${#ALL_ITEMS[@]} )); then
+    echo "[ERREUR] Choix invalide"
+    exit 1
+fi
+
+declare -a SELECTED_ITEMS=()
+if [[ "$choice" == "0" ]]; then
+    SELECTED_ITEMS=("${ALL_ITEMS[@]}")
+else
+    SELECTED_ITEMS=("${ALL_ITEMS[$((choice-1))]}")
+fi
+
 case "$MODE" in
     backup)
         echo "Backup → ${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}"
-
-        for dir in "${BACKUP_DIRS[@]}"; do
-            backup_dir "$dir"
+        for item in "${SELECTED_ITEMS[@]}"; do
+            if [[ "$item" == dir:* ]]; then
+                backup_dir "${item#dir:}"
+            elif [[ "$item" == "steam" ]]; then
+                backup_steam
+            fi
         done
-
-        if [[ -n "${STEAM_LIBRARY_PATH:-}" && -d "${STEAM_LIBRARY_PATH}/steamapps" ]]; then
-            echo "  → manifestes Steam (.acf)"
-            # shellcheck disable=SC2029
-            ssh "${BACKUP_USER}@${BACKUP_HOST}" "mkdir -p '${BACKUP_DEST}/steam-acf'"
-            rsync "${RSYNC_OPTS[@]}" --include="*.acf" --exclude="*" \
-                "${STEAM_LIBRARY_PATH}/steamapps/" \
-                "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/steam-acf/"
-        fi
-
         echo "Backup terminé."
         ;;
     restore)
         echo "Restore ← ${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}"
-
-        for dir in "${BACKUP_DIRS[@]}"; do
-            restore_dir "$dir"
+        for item in "${SELECTED_ITEMS[@]}"; do
+            if [[ "$item" == dir:* ]]; then
+                restore_dir "${item#dir:}"
+            elif [[ "$item" == "steam" ]]; then
+                restore_steam
+            fi
         done
-
-        # shellcheck disable=SC2029
-        if [[ -n "${STEAM_LIBRARY_PATH:-}" ]] && \
-           ssh "${BACKUP_USER}@${BACKUP_HOST}" "test -d '${BACKUP_DEST}/steam-acf'" 2>/dev/null; then
-            echo "  ← manifestes Steam (.acf)"
-            mkdir -p "${STEAM_LIBRARY_PATH}/steamapps"
-            rsync "${RSYNC_OPTS[@]}" \
-                "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/steam-acf/" \
-                "${STEAM_LIBRARY_PATH}/steamapps/"
-        fi
-
-
         echo "Restore terminé."
         ;;
     *)
