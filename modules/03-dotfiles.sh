@@ -56,14 +56,13 @@ fi
 systemctl --user enable --now backup.timer 2>/dev/null || true
 systemctl --user enable --now syncthing.service 2>/dev/null || true
 
-# Configuration git user si non définie
-if [[ -z "$(git config --global user.name 2>/dev/null)" ]]; then
-    read -rp "Git user.name  : " git_name
-    git config --global user.name "$git_name"
-fi
-if [[ -z "$(git config --global user.email 2>/dev/null)" ]]; then
-    read -rp "Git user.email : " git_email
-    git config --global user.email "$git_email"
+# Configuration git user si non définie (écrit dans ~/.gitconfig.local)
+if [[ -z "$(git config --get user.name 2>/dev/null)" ]] || [[ -z "$(git config --get user.email 2>/dev/null)" ]]; then
+    git_name=$(git config --get user.name 2>/dev/null || true)
+    git_email=$(git config --get user.email 2>/dev/null || true)
+    [[ -z "$git_name" ]]  && read -rp "Git user.name  : " git_name
+    [[ -z "$git_email" ]] && read -rp "Git user.email : " git_email
+    printf '[user]\n\tname = %s\n\temail = %s\n' "$git_name" "$git_email" > "$HOME/.gitconfig.local"
 fi
 
 echo "Dotfiles déployés."
