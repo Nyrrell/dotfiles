@@ -4,6 +4,15 @@
 # --- Système ---
 LAN_SUBNET="192.168.1.0/24"
 
+# --- Disques additionnels (fstab) ---
+# format: "UUID|mountpoint|fstype|options"
+# nofail garantit que le boot ne casse pas si le disque est absent (ex: laptop sans le disque)
+# UUID via : lsblk -o NAME,UUID
+EXTRA_MOUNTS=(
+    # "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx|/data|ext4|nosuid,nodev,nofail,x-gvfs-show,x-udisks-auth"
+    # "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx|/game|ext4|nosuid,nodev,nofail,x-gvfs-show,x-udisks-auth"
+)
+
 # --- Backup / NAS ---
 BACKUP_HOST="CHANGEME"                          # hostname ou IP du NAS
 NAS_REMOTE_PATH="/"                             # chemin distant monté sur ~/nas (défaut: /)

@@ -27,6 +27,43 @@ else
     echo "  [SKIP] Wake-on-LAN ignoré"
 fi
 
+# --- Disques additionnels (fstab) ---
+echo "==> Disques additionnels"
+FSTAB_BEGIN="# >>> dotfiles EXTRA_MOUNTS >>>"
+FSTAB_END="# <<< dotfiles EXTRA_MOUNTS <<<"
+
+if grep -qF "$FSTAB_BEGIN" /etc/fstab; then
+    sed -i "/^# >>> dotfiles EXTRA_MOUNTS >>>$/,/^# <<< dotfiles EXTRA_MOUNTS <<<$/d" /etc/fstab
+fi
+sed -i -e :a -e '/^$/{$d;N;ba' -e '}' /etc/fstab
+
+if [[ ${#EXTRA_MOUNTS[@]} -eq 0 ]]; then
+    echo "  [SKIP] EXTRA_MOUNTS vide — rien à monter"
+else
+    cp /etc/fstab "/etc/fstab.bak.$(date +%s)"
+    NEW_BLOCK=$(mktemp)
+    printf '\n%s\n' "$FSTAB_BEGIN" >> "$NEW_BLOCK"
+    for entry in "${EXTRA_MOUNTS[@]}"; do
+        IFS='|' read -r uuid mountpoint fstype options <<< "$entry"
+        if [[ -z "$uuid" || -z "$mountpoint" || -z "$fstype" || -z "$options" ]]; then
+            echo "  [WARN] Entrée invalide ignorée : $entry"
+            continue
+        fi
+        if grep -qE "^[[:space:]]*UUID=$uuid\b" /etc/fstab; then
+            echo "  [SKIP] UUID=$uuid déjà dans /etc/fstab (hors bloc géré)"
+            continue
+        fi
+        mkdir -p "$mountpoint"
+        printf 'UUID=%s\t%s\t%s\t%s\t0 0\n' "$uuid" "$mountpoint" "$fstype" "$options" >> "$NEW_BLOCK"
+        echo "  + $mountpoint (UUID=$uuid)"
+    done
+    printf '%s\n' "$FSTAB_END" >> "$NEW_BLOCK"
+    cat "$NEW_BLOCK" >> /etc/fstab
+    rm -f "$NEW_BLOCK"
+    systemctl daemon-reload
+    mount -a || echo "  [WARN] mount -a a renvoyé une erreur"
+fi
+
 # --- Mount NAS (system automount) ---
 echo "==> NAS automount"
 NAS_HOST=$(eval echo "$BACKUP_HOST")
