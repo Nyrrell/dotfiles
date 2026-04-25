@@ -63,6 +63,26 @@ restore_dir() {
         echo "  [SKIP] $rel (absent du NAS)"
 }
 
+backup_localconf() {
+    echo "  → local.conf"
+    # shellcheck disable=SC2029
+    ssh "${BACKUP_USER}@${BACKUP_HOST}" "mkdir -p '${BACKUP_DEST}/dotfiles'"
+    rsync "${RSYNC_OPTS[@]}" "$SCRIPT_DIR/local.conf" \
+        "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/dotfiles/local.conf"
+}
+
+restore_localconf() {
+    # shellcheck disable=SC2029
+    if ssh "${BACKUP_USER}@${BACKUP_HOST}" "test -f '${BACKUP_DEST}/dotfiles/local.conf'" 2>/dev/null; then
+        echo "  ← local.conf"
+        rsync "${RSYNC_OPTS[@]}" \
+            "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/dotfiles/local.conf" \
+            "$SCRIPT_DIR/local.conf"
+    else
+        echo "  [SKIP] local.conf (absent du NAS)"
+    fi
+}
+
 backup_steam() {
     if [[ -n "${STEAM_LIBRARY_PATH:-}" && -d "${STEAM_LIBRARY_PATH}/steamapps" ]]; then
         echo "  → manifestes Steam (.acf)"
@@ -93,6 +113,8 @@ for dir in "${BACKUP_DIRS[@]}"; do
     ALL_ITEMS+=("dir:$dir")
     ALL_LABELS+=("${dir#"$HOME"/}")
 done
+ALL_ITEMS+=("localconf")
+ALL_LABELS+=("local.conf")
 if [[ -n "${STEAM_LIBRARY_PATH:-}" ]]; then
     ALL_ITEMS+=("steam")
     ALL_LABELS+=("manifestes Steam (.acf)")
@@ -125,6 +147,8 @@ case "$MODE" in
         for item in "${SELECTED_ITEMS[@]}"; do
             if [[ "$item" == dir:* ]]; then
                 backup_dir "${item#dir:}"
+            elif [[ "$item" == "localconf" ]]; then
+                backup_localconf
             elif [[ "$item" == "steam" ]]; then
                 backup_steam
             fi
@@ -136,6 +160,8 @@ case "$MODE" in
         for item in "${SELECTED_ITEMS[@]}"; do
             if [[ "$item" == dir:* ]]; then
                 restore_dir "${item#dir:}"
+            elif [[ "$item" == "localconf" ]]; then
+                restore_localconf
             elif [[ "$item" == "steam" ]]; then
                 restore_steam
             fi
