@@ -7,6 +7,8 @@ LAN_SUBNET="192.168.1.0/24"
 # --- Backup / NAS ---
 BACKUP_HOST="CHANGEME"                          # hostname ou IP du NAS
 NAS_REMOTE_PATH="/"                             # chemin distant monté sur ~/nas (défaut: /)
+NAS_WAN_HOST=""                                 # vide = pas de fallback
+NAS_WAN_PORT="22"                               # port SSH exposé sur WAN
 BACKUP_USER="$(whoami)"
 BACKUP_DEST="/stockage/backups/$(hostname)"
 STEAM_LIBRARY_PATH=""                           # ex: /game/SteamLibrary ; vide = skip
