@@ -1,4 +1,4 @@
-.PHONY: install packages dotfiles fish zsh dev gnome syncthing system ssh backup restore update lint check help
+.PHONY: install packages dotfiles fish zsh dev gnome goa syncthing system ssh backup restore update lint check help
 
 ifeq ($(shell id -u),0)
 $(error [ERREUR] Ne pas lancer avec sudo. Exécute simplement : make $(MAKECMDGOALS))
@@ -29,6 +29,7 @@ install: ## Installation complète dans le bon ordre
 	@$(MAKE) fish
 	@$(MAKE) dev
 	@$(MAKE) gnome
+	@$(MAKE) goa
 	@$(MAKE) syncthing
 	@$(MAKE) system
 	@echo ""
@@ -57,6 +58,10 @@ dev: ## Installe fnm + Node.js LTS + Corepack
 gnome: ## Restaure les settings GNOME via dconf
 	$(CHECK_GIT)
 	@bash $(DIR)modules/06-gnome.sh
+
+goa: ## Configure un compte Cal+Card via GOA Nextcloud
+	$(CHECK_GIT)
+	@bash $(DIR)modules/10-goa.sh
 
 system: ## Config système : wake-on-lan, pare-feu, snapper (sudo demandé automatiquement)
 	$(CHECK_GIT)

@@ -23,6 +23,10 @@ BACKUP_DIRS=(
     # "$HOME/.hyperhdr/db"                       # optionnel : HyperHDR
 )
 
+# --- GOA Cal+Card (provider WebDAV) ---
+GOA_USERNAME=""                                 # vide = skip ; nom d'utilisateur du serveur (≠ email selon le fournisseur)
+GOA_URL=""                                      # ex: https://sync.infomaniak.com/
+
 # --- Paquets machine-specific ---
 # Les groupes interactifs (obs, gaming…) sont dans packages/groups/*.conf
 OPTIONAL_PACMAN_PACKAGES=()
