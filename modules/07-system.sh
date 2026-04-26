@@ -94,6 +94,26 @@ else
     mkdir -p "$NAS_MOUNT_PATH"
     chown "$USER_NAME:$USER_NAME" "$NAS_MOUNT_PATH"
 
+    if sudo -u "$USER_NAME" ssh -i "$SSH_KEY" \
+            -o ConnectTimeout=5 -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "${NAS_USER_VAL}@${NAS_HOST}" true 2>/dev/null; then
+        echo "  Clé SSH déjà autorisée sur ${NAS_USER_VAL}@${NAS_HOST}"
+    else
+        echo "  Clé SSH ($SSH_KEY.pub) non autorisée sur ${NAS_USER_VAL}@${NAS_HOST}"
+        read -rp "  Lancer ssh-copy-id maintenant ? (mot de passe NAS requis) [Y/n] " _copy_answer
+        if [[ "${_copy_answer,,}" != "n" ]]; then
+            if ! sudo -u "$USER_NAME" ssh-copy-id -i "${SSH_KEY}.pub" \
+                    -o StrictHostKeyChecking=accept-new \
+                    "${NAS_USER_VAL}@${NAS_HOST}"; then
+                echo "  [WARN] ssh-copy-id a échoué — l'automount sera créé mais ne fonctionnera pas tant que la clé n'est pas copiée"
+            fi
+        else
+            echo "  [WARN] L'automount sera créé mais ne fonctionnera pas tant que la clé n'est pas copiée manuellement :"
+            echo "    ssh-copy-id -i ${SSH_KEY}.pub ${NAS_USER_VAL}@${NAS_HOST}"
+        fi
+    fi
+
     for ext in mount automount; do
         sed \
             -e "s|@MOUNT_PATH@|$NAS_MOUNT_PATH|g" \
