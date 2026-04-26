@@ -92,3 +92,17 @@ if [[ ${#SYNC_INTRODUCERS[@]} -eq 0 ]]; then
 else
     echo "  Sur le peer distant : autoriser le device ID ci-dessus une fois pour activer la connexion."
 fi
+
+LOCAL_URL="http://127.0.0.1:8384"
+if command -v xdg-open &>/dev/null && [[ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
+    echo "Ouverture des UIs Syncthing dans le navigateur..."
+    xdg-open "$LOCAL_URL" >/dev/null 2>&1 &
+    if [[ -n "${SYNCTHING_REMOTE_URL:-}" ]]; then
+        xdg-open "$SYNCTHING_REMOTE_URL" >/dev/null 2>&1 &
+    else
+        echo "  [INFO] SYNCTHING_REMOTE_URL vide — seule l'UI locale est ouverte"
+    fi
+else
+    echo "  UI locale  : $LOCAL_URL"
+    [[ -n "${SYNCTHING_REMOTE_URL:-}" ]] && echo "  UI distante: $SYNCTHING_REMOTE_URL"
+fi

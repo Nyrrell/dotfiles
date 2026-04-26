@@ -52,3 +52,7 @@ SYNC_FOLDERS=(
 SYNC_INTRODUCERS=(
     "label|XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX"
 )
+
+# URL de l'UI Syncthing distante à ouvrir après config (vide = skip)
+# Le serveur doit accepter le device ID local + les folders partagés.
+SYNCTHING_REMOTE_URL=""                         # ex: https://syncthing.exemple.com/
