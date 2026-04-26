@@ -13,6 +13,7 @@ application/pdf=firefox.desktop
 application/x-keepass2=org.keepassxc.KeePassXC.desktop
 application/x-keepassx=org.keepassxc.KeePassXC.desktop
 text/markdown=org.gnome.gitlab.somas.Apostrophe.desktop
+x-scheme-handler/jetbrains=jetbrainsd.desktop
 
 [Added Associations]
 application/x-keepass2=org.keepassxc.KeePassXC.desktop;
