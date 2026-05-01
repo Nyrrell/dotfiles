@@ -37,6 +37,24 @@ if [[ ${#OPTIONAL_AUR_PACKAGES[@]} -gt 0 ]]; then
     echo "Installation des paquets AUR optionnels..."
     paru -S --needed --noconfirm --aur "${OPTIONAL_AUR_PACKAGES[@]}" || true
 fi
+if [[ ${#OPTIONAL_PREBUILT_PACKAGES[@]} -gt 0 ]]; then
+    echo "Installation des paquets pré-compilés optionnels..."
+    _tmpdir=$(mktemp -d)
+    for _entry in "${OPTIONAL_PREBUILT_PACKAGES[@]}"; do
+        _pkgname="${_entry%%|*}"
+        _pkgurl="${_entry##*|}"
+        if pacman -Qi "$_pkgname" &>/dev/null; then
+            echo "  -> $_pkgname déjà installé, ignoré"
+            continue
+        fi
+        _pkgfile="$_tmpdir/${_pkgurl##*/}"
+        echo "  -> Téléchargement $_pkgname..."
+        curl -fL --progress-bar -o "$_pkgfile" "$_pkgurl" || { echo "  [WARN] Téléchargement échoué pour $_pkgname"; continue; }
+        echo "  -> Installation $_pkgname..."
+        sudo pacman -U --noconfirm "$_pkgfile" || echo "  [WARN] $_pkgname non installé"
+    done
+    rm -rf "$_tmpdir"
+fi
 
 # Flatpak
 if command -v flatpak &>/dev/null; then
