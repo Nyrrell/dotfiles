@@ -39,9 +39,8 @@ GOA_URL=""                                      # ex: https://sync.infomaniak.co
 # Les groupes interactifs (obs, gaming…) sont dans packages/groups/*.conf
 OPTIONAL_PACMAN_PACKAGES=()
 OPTIONAL_AUR_PACKAGES=()                        # ex: (hyperhdr-git)
-OPTIONAL_PREBUILT_PACKAGES=(                    # format: "pkgname|https://url/package.pkg.tar.zst"
-    "hyperhdr|https://awawa-dev.github.io/repo/others/HyperHDR-22.0.0beta1-1-x86_64.pkg.tar.zst"
-    )
+OPTIONAL_PREBUILT_PACKAGES=()                   # format: "pkgname|https://url/package.pkg.tar.zst"
+
 OPTIONAL_FLATPAK_PACKAGES=()
 
 # --- Syncthing ---
