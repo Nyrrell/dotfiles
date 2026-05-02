@@ -37,13 +37,6 @@ for pkg in fish zsh git environment profile systemd ssh mimeapps; do
     fi
 done
 
-if command -v hyperhdr &>/dev/null; then
-    echo "Stow: hyperhdr"
-    clear_stow_conflicts hyperhdr
-    stow --restow --no-folding --target="$HOME" hyperhdr
-    systemctl --user enable hyperhdr.service 2>/dev/null || true
-fi
-
 [[ -f "$HOME/.ssh/config" ]] && chmod 600 "$HOME/.ssh/config"
 chmod -R +x "$HOME/.local/share/bin/" 2>/dev/null || true
 
