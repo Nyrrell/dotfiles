@@ -29,7 +29,7 @@ clear_stow_conflicts() {
     done < <(find "$pkg" -type f)
 }
 
-for pkg in fish zsh git environment profile systemd ssh mimeapps; do
+for pkg in fish zsh git environment profile systemd ssh; do
     if [[ -d "$pkg" ]]; then
         echo "Stow: $pkg"
         clear_stow_conflicts "$pkg"

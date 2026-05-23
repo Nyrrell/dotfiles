@@ -79,7 +79,6 @@ dotfiles/
 │   ├── profile/ → ~/.profile
 │   ├── systemd/ → ~/.config/systemd/user/
 │   ├── ssh/    → ~/.ssh/config
-│   ├── mimeapps/ → ~/.config/mimeapps.list
 │   └── bin/    → ~/.local/share/bin/
 ├── hooks/                  # Hooks pacman (copiés par make system)
 ├── packages/
