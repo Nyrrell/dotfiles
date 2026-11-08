@@ -15,6 +15,7 @@ load_conf
 
 # --- Wake-on-LAN ---
 echo "==> Wake-on-LAN"
+detect_once ENABLE_WOL systemctl is-enabled --quiet wake-on-lan.service
 ask_once ENABLE_WOL "Activer Wake-on-LAN ? (filaire uniquement)"
 if is_yes ENABLE_WOL; then
     cp "$SCRIPT_DIR/systemd/system/wake-on-lan.service" /etc/systemd/system/
@@ -183,20 +184,24 @@ if ! command -v ufw &>/dev/null; then
     pacman -S --needed --noconfirm ufw
 fi
 
-if ufw status | grep -q "Status: inactive" && [[ $(ufw show added 2>/dev/null | wc -l) -eq 0 ]]; then
-    ufw --force reset
-    ufw default deny incoming
-    ufw default allow outgoing
-fi
+# Règles et politiques appliquées à chaque run (idempotent : ufw ignore une règle
+# existante), que ufw soit déjà actif ou non — y compris s'il était activé par
+# défaut avec une autre config. Les règles passent avant les politiques pour ne
+# jamais couper le SSH LAN. Les règles ajoutées à la main sont conservées.
 ufw allow from "$LAN" to any port 22 proto tcp comment "SSH LAN"
 ufw allow 22000/tcp comment "Syncthing sync"
 ufw allow 22000/udp comment "Syncthing sync"
 ufw allow 21027/udp comment "Syncthing découverte locale"
+ufw default deny incoming
+ufw default allow outgoing
+
+ufw_active() { ufw status | grep -q "Status: active"; }
+detect_once ENABLE_UFW ufw_active
 ask_once ENABLE_UFW "Activer le pare-feu ufw ?"
-if is_yes ENABLE_UFW && ufw status | grep -q "Status: inactive"; then
-    ufw --force enable
+if is_yes ENABLE_UFW; then
+    ufw_active || ufw --force enable
+    systemctl enable ufw
 fi
-systemctl enable ufw
 ufw status verbose
 
 # --- Snapper ---

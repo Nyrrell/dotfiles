@@ -49,6 +49,20 @@ ask_once() {
     echo "  → $var=$answer mémorisé dans local.conf"
 }
 
+# detect_once VAR commande... : si VAR n'est pas encore défini et que la commande
+# réussit (ex : service déjà activé), mémorise VAR="yes" sans poser de question.
+# À appeler juste avant ask_once.
+detect_once() {
+    local var="$1"
+    shift
+    [[ -n "${!var:-}" ]] && return 0
+    if "$@" &>/dev/null; then
+        printf -v "$var" yes
+        conf_append "$var=\"yes\""
+        echo "  → déjà actif sur cette machine : $var=yes mémorisé dans local.conf"
+    fi
+}
+
 # is_yes VAR → vrai si VAR vaut "yes"
 is_yes() { [[ "${!1:-}" == yes ]]; }
 

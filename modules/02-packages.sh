@@ -66,7 +66,7 @@ if [[ ${#OPTIONAL_PREBUILT_PACKAGES[@]} -gt 0 ]]; then
     for _entry in "${OPTIONAL_PREBUILT_PACKAGES[@]}"; do
         _pkgname="${_entry%%|*}"
         _pkgurl="${_entry##*|}"
-        if pacman -Qi "$_pkgname" &>/dev/null; then
+        if pacman -Qq | grep -qixF "$_pkgname"; then  # insensible à la casse (ex: HyperHDR)
             echo "  -> $_pkgname déjà installé, ignoré"
             continue
         fi
@@ -112,6 +112,18 @@ install_group() {
     fi
 }
 
+# Vrai si tous les paquets du groupe chargé sont déjà installés (groupe non vide)
+group_installed() {
+    local p
+    [[ $(( ${#GROUP_PACMAN[@]} + ${#GROUP_AUR[@]} + ${#GROUP_FLATPAK[@]} )) -gt 0 ]] || return 1
+    for p in "${GROUP_PACMAN[@]}" "${GROUP_AUR[@]}"; do
+        pacman -Q "$p" &>/dev/null || return 1
+    done
+    for p in "${GROUP_FLATPAK[@]}"; do
+        flatpak info --user "$p" &>/dev/null || return 1
+    done
+}
+
 echo ""
 echo "Groupes optionnels :"
 for _group_file in "$SCRIPT_DIR/packages/groups/"*.conf; do
@@ -127,6 +139,10 @@ for _group_file in "$SCRIPT_DIR/packages/groups/"*.conf; do
         install_group "$_group"
     elif in_list "$_group" "${PACKAGE_GROUPS_SKIP[@]}"; then
         echo "  [$_group] ignoré (PACKAGE_GROUPS_SKIP)"
+    elif group_installed; then
+        PACKAGE_GROUPS+=("$_group")
+        conf_append "PACKAGE_GROUPS+=($_group)"
+        echo "  [$_group] déjà installé : mémorisé dans local.conf"
     else
         if ! read -rp "  Installer $GROUP_LABEL ? (choix mémorisé dans local.conf) [y/N] " _answer; then
             echo "  [SKIP] pas d'entrée — question reposée au prochain run"
