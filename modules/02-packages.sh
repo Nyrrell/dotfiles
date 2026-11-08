@@ -1,6 +1,40 @@
 #!/usr/bin/env bash
+# Installe les paquets déclarés (pacman, AUR, pré-compilés, Flatpak, groupes).
+# Ne fait PAS de mise à jour système : c'est le rôle de `make upgrade`.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=modules/lib.sh
+source "$SCRIPT_DIR/modules/lib.sh"
+
+declare -a OPTIONAL_PACMAN_PACKAGES=() OPTIONAL_AUR_PACKAGES=() \
+    OPTIONAL_PREBUILT_PACKAGES=() OPTIONAL_FLATPAK_PACKAGES=() \
+    PACKAGE_GROUPS=() PACKAGE_GROUPS_SKIP=()
+load_conf
+
+FAILED=()
+fail() {
+    FAILED+=("$1")
+    echo "  [WARN] échec : $1"
+}
+
+in_list() {
+    local needle="$1" x
+    shift
+    for x in "$@"; do [[ "$x" == "$needle" ]] && return 0; done
+    return 1
+}
+
+flatpak_install() {
+    local app
+    command -v flatpak &>/dev/null || return 0
+    for app in "$@"; do
+        if flatpak info --user "$app" &>/dev/null; then
+            continue
+        fi
+        echo "  -> $app"
+        flatpak install --user -y flathub "$app" || fail "$app (flatpak)"
+    done
+}
 
 # Installe paru si absent
 if ! command -v paru &>/dev/null; then
@@ -13,29 +47,18 @@ if ! command -v paru &>/dev/null; then
 fi
 
 echo "Installation des paquets natifs..."
-paru -S --needed --noconfirm - < "$SCRIPT_DIR/packages/pacman.txt" || true
+paru -S --needed --noconfirm - < "$SCRIPT_DIR/packages/pacman.txt" || fail "paquets natifs (pacman.txt)"
 
 echo "Installation des paquets AUR..."
-paru -S --needed --noconfirm --aur - < "$SCRIPT_DIR/packages/aur.txt" || true
-
-# Paquets optionnels définis dans local.conf
-declare -a OPTIONAL_PACMAN_PACKAGES=()
-declare -a OPTIONAL_AUR_PACKAGES=()
-declare -a OPTIONAL_FLATPAK_PACKAGES=()
-if [[ ! -f "$SCRIPT_DIR/local.conf" ]]; then
-    echo "[ERREUR] local.conf absent — copie local.conf.example et adapte les valeurs"
-    exit 1
-fi
-# shellcheck source=/dev/null
-source "$SCRIPT_DIR/local.conf"
+paru -S --needed --noconfirm --aur - < "$SCRIPT_DIR/packages/aur.txt" || fail "paquets AUR (aur.txt)"
 
 if [[ ${#OPTIONAL_PACMAN_PACKAGES[@]} -gt 0 ]]; then
     echo "Installation des paquets natifs optionnels..."
-    paru -S --needed --noconfirm "${OPTIONAL_PACMAN_PACKAGES[@]}" || true
+    paru -S --needed --noconfirm "${OPTIONAL_PACMAN_PACKAGES[@]}" || fail "OPTIONAL_PACMAN_PACKAGES"
 fi
 if [[ ${#OPTIONAL_AUR_PACKAGES[@]} -gt 0 ]]; then
     echo "Installation des paquets AUR optionnels..."
-    paru -S --needed --noconfirm --aur "${OPTIONAL_AUR_PACKAGES[@]}" || true
+    paru -S --needed --noconfirm --aur "${OPTIONAL_AUR_PACKAGES[@]}" || fail "OPTIONAL_AUR_PACKAGES"
 fi
 if [[ ${#OPTIONAL_PREBUILT_PACKAGES[@]} -gt 0 ]]; then
     echo "Installation des paquets pré-compilés optionnels..."
@@ -49,9 +72,9 @@ if [[ ${#OPTIONAL_PREBUILT_PACKAGES[@]} -gt 0 ]]; then
         fi
         _pkgfile="$_tmpdir/${_pkgurl##*/}"
         echo "  -> Téléchargement $_pkgname..."
-        curl -fL --progress-bar -o "$_pkgfile" "$_pkgurl" || { echo "  [WARN] Téléchargement échoué pour $_pkgname"; continue; }
+        curl -fL --progress-bar -o "$_pkgfile" "$_pkgurl" || { fail "$_pkgname (téléchargement)"; continue; }
         echo "  -> Installation $_pkgname..."
-        sudo pacman -U --noconfirm "$_pkgfile" || echo "  [WARN] $_pkgname non installé"
+        sudo pacman -U --noconfirm "$_pkgfile" || fail "$_pkgname (pré-compilé)"
     done
     rm -rf "$_tmpdir"
 fi
@@ -62,51 +85,66 @@ if command -v flatpak &>/dev/null; then
     flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
     echo "Installation des apps Flatpak..."
+    _flatpak_apps=()
     while IFS= read -r _app || [[ -n "$_app" ]]; do
         [[ -z "$_app" || "$_app" == \#* ]] && continue
-        echo "  -> $_app"
-        flatpak install --user -y flathub "$_app" || echo "  [WARN] $_app non installé"
+        _flatpak_apps+=("$_app")
     done < "$SCRIPT_DIR/packages/flatpak.txt"
-
-    if [[ ${#OPTIONAL_FLATPAK_PACKAGES[@]} -gt 0 ]]; then
-        echo "Installation des apps Flatpak optionnelles..."
-        for _app in "${OPTIONAL_FLATPAK_PACKAGES[@]}"; do
-            echo "  -> $_app"
-            flatpak install --user -y flathub "$_app" || echo "  [WARN] $_app non installé"
-        done
-    fi
+    flatpak_install "${_flatpak_apps[@]}" "${OPTIONAL_FLATPAK_PACKAGES[@]}"
 else
     echo "[WARN] flatpak introuvable — apps Flatpak ignorées"
 fi
 
-# Groupes interactifs (pacman + AUR + flatpak)
+# Groupes optionnels : le choix est mémorisé par machine dans local.conf
+# (PACKAGE_GROUPS / PACKAGE_GROUPS_SKIP). Seul un groupe jamais vu déclenche une question.
+install_group() {
+    if [[ ${#GROUP_PACMAN[@]} -gt 0 ]]; then
+        paru -S --needed --noconfirm "${GROUP_PACMAN[@]}" || fail "groupe $1 (pacman)"
+    fi
+    if [[ ${#GROUP_AUR[@]} -gt 0 ]]; then
+        paru -S --needed --noconfirm --aur "${GROUP_AUR[@]}" || fail "groupe $1 (AUR)"
+    fi
+    if [[ ${#GROUP_FLATPAK[@]} -gt 0 ]]; then
+        flatpak_install "${GROUP_FLATPAK[@]}"
+    fi
+    if [[ -n "$GROUP_POST_INSTALL_MSG" ]]; then
+        echo "  → $GROUP_POST_INSTALL_MSG"
+    fi
+}
+
 echo ""
 echo "Groupes optionnels :"
 for _group_file in "$SCRIPT_DIR/packages/groups/"*.conf; do
     [[ -f "$_group_file" ]] || continue
+    _group=$(basename "$_group_file" .conf)
     # shellcheck disable=SC2034
     GROUP_LABEL="" GROUP_PACMAN=() GROUP_AUR=() GROUP_FLATPAK=() GROUP_POST_INSTALL_MSG=""
     # shellcheck source=/dev/null
     source "$_group_file"
-    read -rp "  Installer $GROUP_LABEL ? [y/N] " _answer
-    if [[ "${_answer,,}" == "y" ]]; then
-        if [[ ${#GROUP_PACMAN[@]} -gt 0 ]]; then
-            paru -S --needed --noconfirm "${GROUP_PACMAN[@]}" || true
-        fi
-        if [[ ${#GROUP_AUR[@]} -gt 0 ]]; then
-            paru -S --needed --noconfirm --aur "${GROUP_AUR[@]}" || true
-        fi
-        if [[ ${#GROUP_FLATPAK[@]} -gt 0 ]] && command -v flatpak &>/dev/null; then
-            for _app in "${GROUP_FLATPAK[@]}"; do
-                echo "  -> $_app"
-                flatpak install --user -y flathub "$_app" || echo "  [WARN] $_app non installé"
-            done
-        fi
-        if [[ -n "$GROUP_POST_INSTALL_MSG" ]]; then
-            echo "  → $GROUP_POST_INSTALL_MSG"
+
+    if in_list "$_group" "${PACKAGE_GROUPS[@]}"; then
+        echo "  [$_group] $GROUP_LABEL"
+        install_group "$_group"
+    elif in_list "$_group" "${PACKAGE_GROUPS_SKIP[@]}"; then
+        echo "  [$_group] ignoré (PACKAGE_GROUPS_SKIP)"
+    else
+        if ! read -rp "  Installer $GROUP_LABEL ? (choix mémorisé dans local.conf) [y/N] " _answer; then
+            echo "  [SKIP] pas d'entrée — question reposée au prochain run"
+        elif [[ "${_answer,,}" == "y" ]]; then
+            PACKAGE_GROUPS+=("$_group")
+            conf_append "PACKAGE_GROUPS+=($_group)"
+            install_group "$_group"
+        else
+            PACKAGE_GROUPS_SKIP+=("$_group")
+            conf_append "PACKAGE_GROUPS_SKIP+=($_group)"
         fi
     fi
 done
 
-echo "Mise à jour complète du système..."
-paru -Syu --noconfirm
+if [[ ${#FAILED[@]} -gt 0 ]]; then
+    echo ""
+    echo "[ERREUR] ${#FAILED[@]} échec(s) :"
+    printf '  - %s\n' "${FAILED[@]}"
+    exit 1
+fi
+echo "Paquets OK."

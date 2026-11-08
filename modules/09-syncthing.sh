@@ -7,13 +7,10 @@ if ! command -v syncthing &>/dev/null; then
     exit 1
 fi
 
-if [[ ! -f "$SCRIPT_DIR/local.conf" ]]; then
-    echo "[ERREUR] local.conf absent — copie local.conf.example et adapte les valeurs"
-    exit 1
-fi
+# shellcheck source=modules/lib.sh
+source "$SCRIPT_DIR/modules/lib.sh"
 declare -a SYNC_INTRODUCERS=()
-# shellcheck source=/dev/null
-source "$SCRIPT_DIR/local.conf"
+load_conf
 
 # 1. Démarrer le service (idempotent)
 mkdir -p "$HOME/.config/systemd/user/default.target.wants"

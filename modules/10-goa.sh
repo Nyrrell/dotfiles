@@ -2,12 +2,9 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if [[ ! -f "$SCRIPT_DIR/local.conf" ]]; then
-    echo "[ERREUR] local.conf absent — copie local.conf.example et adapte les valeurs"
-    exit 1
-fi
-# shellcheck source=/dev/null
-source "$SCRIPT_DIR/local.conf"
+# shellcheck source=modules/lib.sh
+source "$SCRIPT_DIR/modules/lib.sh"
+load_conf
 
 if [[ -z "${GOA_USERNAME:-}" ]] || [[ -z "${GOA_URL:-}" ]]; then
     echo "==> GOA Cal+Card: skip (GOA_USERNAME ou GOA_URL vide)"

@@ -3,6 +3,9 @@
 
 # --- Système ---
 LAN_SUBNET="192.168.1.0/24"
+# Laisser vide : la question est posée une fois par make system, puis mémorisée ici.
+ENABLE_WOL=""                                   # yes|no — Wake-on-LAN (filaire)
+ENABLE_UFW=""                                   # yes|no — activer le pare-feu ufw
 
 # --- Disques additionnels (fstab) ---
 # format: "UUID|mountpoint|fstype|options"
@@ -36,7 +39,10 @@ GOA_USERNAME=""                                 # vide = skip ; nom d'utilisateu
 GOA_URL=""                                      # ex: https://sync.infomaniak.com/
 
 # --- Paquets machine-specific ---
-# Les groupes interactifs (obs, gaming…) sont dans packages/groups/*.conf
+# Groupes optionnels (packages/groups/<nom>.conf) installés sur cette machine.
+# Un groupe absent des deux listes est demandé une fois, puis la réponse est ajoutée ici.
+PACKAGE_GROUPS=()                               # ex: (obs gaming)
+PACKAGE_GROUPS_SKIP=()                          # groupes refusés sur cette machine
 OPTIONAL_PACMAN_PACKAGES=()
 OPTIONAL_AUR_PACKAGES=()                        # ex: (hyperhdr-git)
 OPTIONAL_PREBUILT_PACKAGES=()                   # format: "pkgname|https://url/package.pkg.tar.zst"

@@ -31,7 +31,7 @@ Pour rejouer une étape seule :
 
 ```bash
 make ssh        # clé SSH ed25519 (à faire en premier, nécessaire pour GitHub et le NAS)
-make packages   # paquets pacman + AUR + Flatpak + groupes interactifs (OBS, gaming…)
+make packages   # paquets pacman + AUR + Flatpak + groupes (OBS, gaming…, choix mémorisé)
 make dotfiles   # symlinks via GNU Stow + git user config
 make fish       # shell par défaut
 make dev        # fnm + Node.js LTS
@@ -40,11 +40,33 @@ make syncthing  # peers et folders (nécessite SYNC_INTRODUCERS dans local.conf)
 make system     # wake-on-lan, pare-feu, snapper (sudo demandé automatiquement)
 ```
 
+## Au quotidien
+
+```bash
+make save               # sur la machine où tu as modifié quelque chose : export GNOME + commit + push
+make sync               # sur l'autre machine : git pull + relance seulement les modules concernés
+make add PKG=htop       # ajoute un paquet à la bonne liste (pacman/AUR/Flathub) et l'installe
+make add PKG=obs-vkcapture-git GROUP=obs   # … ou à un groupe optionnel
+make upgrade            # mise à jour système (paru -Syu + flatpak update)
+```
+
+`make sync` compare un hash des entrées de chaque module (listes de paquets,
+`dconf-backup.ini`, units systemd, clés de `local.conf`…) à celui enregistré dans
+`~/.local/state/dotfiles/` et ne relance que ce qui a changé. `make sync FORCE=1`
+relance tout.
+
+Les choix propres à chaque machine (groupes `PACKAGE_GROUPS`, `ENABLE_WOL`,
+`ENABLE_UFW`) sont demandés **une seule fois** puis mémorisés dans `local.conf`.
+
 ## Targets disponibles
 
 | Commande         | Description                                                                    |
 |------------------|--------------------------------------------------------------------------------|
 | `make install`   | Installation complète : ssh, packages, dotfiles, dev, GNOME, syncthing, system |
+| `make sync`      | `git pull` + relance seulement les modules dont les entrées ont changé         |
+| `make save`      | Export GNOME + commit + push                                                   |
+| `make add`       | `make add PKG=nom [GROUP=obs]` : ajoute un paquet à la bonne liste et l'installe |
+| `make upgrade`   | Mise à jour système (`paru -Syu` + `flatpak update`)                           |
 | `make packages`  | Installe paquets pacman + AUR + Flatpak + groupes interactifs (OBS, gaming…)   |
 | `make dotfiles`  | Déploie les configs via GNU Stow                                               |
 | `make fish`      | Configure Fish comme shell par défaut                                          |
@@ -85,7 +107,7 @@ dotfiles/
 │   ├── pacman.txt          # Paquets natifs
 │   ├── aur.txt             # Paquets AUR
 │   ├── flatpak.txt         # Apps Flatpak
-│   └── groups/             # Groupes optionnels avec prompt interactif
+│   └── groups/             # Groupes optionnels (choix mémorisé par machine dans local.conf)
 │       ├── obs.conf        # OBS Studio (AUR + Flatpak)
 │       └── gaming.conf     # Gaming : Steam, protonup-qt, steamtinkerlaunch
 ├── local.conf.example      # Template de config machine (copier en local.conf)

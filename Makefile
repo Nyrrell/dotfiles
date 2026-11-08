@@ -1,4 +1,4 @@
-.PHONY: install packages dotfiles fish zsh dev gnome goa syncthing system ssh backup restore update lint check help
+.PHONY: install sync save add upgrade packages dotfiles fish zsh dev gnome goa syncthing system ssh backup restore update lint check help
 
 ifeq ($(shell id -u),0)
 $(error [ERREUR] Ne pas lancer avec sudo. Exécute simplement : make $(MAKECMDGOALS))
@@ -24,7 +24,8 @@ endef
 install: ## Installation complète dans le bon ordre
 	$(CHECK_GIT)
 	@$(MAKE) ssh
-	@$(MAKE) packages
+	-@$(MAKE) packages
+	@$(MAKE) upgrade
 	@$(MAKE) dotfiles
 	@$(MAKE) fish
 	@$(MAKE) dev
@@ -35,13 +36,28 @@ install: ## Installation complète dans le bon ordre
 	@echo ""
 	@echo "Installation terminée. Redémarre la session pour appliquer tous les changements."
 
-packages: ## Installe tous les paquets pacman + AUR
+sync: ## Au quotidien : git pull + relance seulement ce qui a changé (FORCE=1 pour tout)
+	@bash $(DIR)modules/sync.sh
+
+save: ## Au quotidien : export GNOME + commit + push
+	@bash $(DIR)modules/save.sh
+
+add: ## Ajoute un paquet à la bonne liste et l'installe : make add PKG=nom [GROUP=obs]
+	@bash $(DIR)modules/add-pkg.sh "$(PKG)" "$(GROUP)"
+
+upgrade: ## Mise à jour système (paru -Syu + flatpak update)
+	@paru -Syu --noconfirm
+	@if command -v flatpak >/dev/null 2>&1; then flatpak update --user -y; fi
+
+packages: ## Installe les paquets déclarés (pacman, AUR, Flatpak, groupes) sans -Syu
 	$(CHECK_GIT)
 	@bash $(DIR)modules/02-packages.sh
+	@bash $(DIR)modules/sync.sh --mark packages
 
 dotfiles: ## Déploie les configs via GNU Stow
 	$(CHECK_GIT)
 	@bash $(DIR)modules/03-dotfiles.sh
+	@bash $(DIR)modules/sync.sh --mark dotfiles
 
 fish: ## Configure Fish comme shell par défaut
 	$(CHECK_GIT)
@@ -58,6 +74,7 @@ dev: ## Installe fnm + Node.js LTS + Corepack
 gnome: ## Restaure les settings GNOME via dconf
 	$(CHECK_GIT)
 	@bash $(DIR)modules/06-gnome.sh
+	@bash $(DIR)modules/sync.sh --mark gnome
 
 goa: ## Configure un compte Cal+Card via GOA Nextcloud
 	$(CHECK_GIT)
@@ -66,10 +83,12 @@ goa: ## Configure un compte Cal+Card via GOA Nextcloud
 system: ## Config système : wake-on-lan, pare-feu, snapper (sudo demandé automatiquement)
 	$(CHECK_GIT)
 	@bash $(DIR)modules/07-system.sh
+	@bash $(DIR)modules/sync.sh --mark system
 
 syncthing: ## Configure les folders Syncthing (peers + KeePass, Documents...)
 	$(CHECK_GIT)
 	@bash $(DIR)modules/09-syncthing.sh
+	@bash $(DIR)modules/sync.sh --mark syncthing
 
 ssh: ## Génère une clé SSH ed25519 si absente et affiche la clé publique
 	$(CHECK_GIT)

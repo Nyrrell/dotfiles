@@ -9,17 +9,14 @@ fi
 
 USER_NAME="${SUDO_USER:-$(whoami)}"
 
-if [[ ! -f "$SCRIPT_DIR/local.conf" ]]; then
-    echo "[ERREUR] local.conf absent — copie local.conf.example et adapte les valeurs"
-    exit 1
-fi
-# shellcheck source=/dev/null
-source "$SCRIPT_DIR/local.conf"
+# shellcheck source=modules/lib.sh
+source "$SCRIPT_DIR/modules/lib.sh"
+load_conf
 
 # --- Wake-on-LAN ---
 echo "==> Wake-on-LAN"
-read -rp "  Activer Wake-on-LAN ? (filaire uniquement) [y/N] " _wol_answer
-if [[ "${_wol_answer,,}" == "y" ]]; then
+ask_once ENABLE_WOL "Activer Wake-on-LAN ? (filaire uniquement)"
+if is_yes ENABLE_WOL; then
     cp "$SCRIPT_DIR/systemd/system/wake-on-lan.service" /etc/systemd/system/
     systemctl daemon-reload
     systemctl enable --now wake-on-lan.service || true
@@ -71,7 +68,11 @@ NAS_USER_VAL="$USER_NAME"
 USER_HOME=$(eval echo "~$USER_NAME")
 USER_UID=$(id -u "$USER_NAME")
 USER_GID=$(id -g "$USER_NAME")
-NAS_MOUNT_PATH="$USER_HOME/nas"
+# Monté HORS du home : un point de montage FUSE mort dans $HOME casse le
+# démarrage des apps Flatpak (bubblewrap parcourt $HOME au lancement).
+# ~/nas reste dispo via un symlink vers /mnt/nas (voir plus bas).
+NAS_MOUNT_PATH="/mnt/nas"
+NAS_LINK="$USER_HOME/nas"
 NAS_UNIT=$(systemd-escape --path "$NAS_MOUNT_PATH")
 SSH_KEY="$USER_HOME/.ssh/id_ed25519"
 
@@ -83,16 +84,34 @@ else
         echo "user_allow_other" >> /etc/fuse.conf
     fi
 
-    if systemctl is-active --quiet "${NAS_UNIT}.automount" 2>/dev/null; then
-        systemctl stop "${NAS_UNIT}.automount" || true
-        systemctl disable "${NAS_UNIT}.automount" || true
-    fi
-    if systemctl is-active --quiet "${NAS_UNIT}.mount" 2>/dev/null; then
-        systemctl stop "${NAS_UNIT}.mount" || true
+    # Nettoyage de l'ancien montage dans le home (legacy ~/nas) + du montage courant
+    LEGACY_UNIT=$(systemd-escape --path "$USER_HOME/nas")
+    for unit in "$LEGACY_UNIT" "$NAS_UNIT"; do
+        for ext in automount mount; do
+            if systemctl is-active --quiet "${unit}.${ext}" 2>/dev/null; then
+                systemctl stop "${unit}.${ext}" || true
+            fi
+            systemctl disable "${unit}.${ext}" 2>/dev/null || true
+        done
+    done
+    # Supprimer les unités legacy si le montage a bougé hors du home
+    if [[ "$LEGACY_UNIT" != "$NAS_UNIT" ]]; then
+        rm -f "/etc/systemd/system/${LEGACY_UNIT}.mount" "/etc/systemd/system/${LEGACY_UNIT}.automount"
+        # Remplacer l'ancien dossier ~/nas (vidé) par un symlink vers le nouveau point
+        if [[ -d "$NAS_LINK" && ! -L "$NAS_LINK" ]]; then
+            rmdir "$NAS_LINK" 2>/dev/null && echo "  Ancien dossier ~/nas supprimé"
+        fi
     fi
 
     mkdir -p "$NAS_MOUNT_PATH"
-    chown "$USER_NAME:$USER_NAME" "$NAS_MOUNT_PATH"
+
+    # Symlink de compat : ~/nas -> /mnt/nas
+    if [[ ! -e "$NAS_LINK" || -L "$NAS_LINK" ]]; then
+        ln -sfn "$NAS_MOUNT_PATH" "$NAS_LINK"
+        chown -h "$USER_NAME:$USER_NAME" "$NAS_LINK"
+    else
+        echo "  [ATTENTION] $NAS_LINK existe et n'est pas vide — symlink non créé"
+    fi
 
     if sudo -u "$USER_NAME" ssh -i "$SSH_KEY" \
             -o ConnectTimeout=5 -o BatchMode=yes \
@@ -173,9 +192,9 @@ ufw allow from "$LAN" to any port 22 proto tcp comment "SSH LAN"
 ufw allow 22000/tcp comment "Syncthing sync"
 ufw allow 22000/udp comment "Syncthing sync"
 ufw allow 21027/udp comment "Syncthing découverte locale"
-if ufw status | grep -q "Status: inactive"; then
-    read -rp "  ufw est inactif — l'activer maintenant ? [y/N] " _answer
-    [[ "${_answer,,}" == "y" ]] && ufw --force enable
+ask_once ENABLE_UFW "Activer le pare-feu ufw ?"
+if is_yes ENABLE_UFW && ufw status | grep -q "Status: inactive"; then
+    ufw --force enable
 fi
 systemctl enable ufw
 ufw status verbose

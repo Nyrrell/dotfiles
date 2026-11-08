@@ -21,3 +21,6 @@ Thumbs.db
 # Editors
 *.swp
 *.swo
+
+# fish réécrit ce fichier à chaque session (plugins, chemins) : non versionné
+dotfiles/fish/.config/fish/fish_variables
