@@ -83,27 +83,50 @@ restore_localconf() {
     fi
 }
 
-backup_steam() {
-    if [[ -n "${STEAM_LIBRARY_PATH:-}" && -d "${STEAM_LIBRARY_PATH}/steamapps" ]]; then
-        echo "  → manifestes Steam (.acf)"
+backup_steam_launchopts() {
+    local count=0
+    shopt -s nullglob
+    for vdf in "$HOME/.local/share/Steam/userdata"/*/config/localconfig.vdf; do
+        local userid
+        userid=$(basename "$(dirname "$(dirname "$vdf")")")
+        echo "  → options de lancement Steam (user $userid)"
         # shellcheck disable=SC2029
-        ssh "${BACKUP_USER}@${BACKUP_HOST}" "mkdir -p '${BACKUP_DEST}/steam-acf'"
-        rsync "${RSYNC_OPTS[@]}" --include="*.acf" --exclude="*" \
-            "${STEAM_LIBRARY_PATH}/steamapps/" \
-            "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/steam-acf/"
+        ssh "${BACKUP_USER}@${BACKUP_HOST}" \
+            "mkdir -p '${BACKUP_DEST}/steam-launchopts/${userid}/config'"
+        rsync "${RSYNC_OPTS[@]}" "$vdf" \
+            "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/steam-launchopts/${userid}/config/"
+        count=$((count + 1))
+    done
+    shopt -u nullglob
+    if [[ $count -eq 0 ]]; then
+        echo "  [SKIP] aucun localconfig.vdf trouvé"
     fi
 }
 
-restore_steam() {
+restore_steam_launchopts() {
     # shellcheck disable=SC2029
-    if [[ -n "${STEAM_LIBRARY_PATH:-}" ]] && \
-       ssh "${BACKUP_USER}@${BACKUP_HOST}" "test -d '${BACKUP_DEST}/steam-acf'" 2>/dev/null; then
-        echo "  ← manifestes Steam (.acf)"
-        mkdir -p "${STEAM_LIBRARY_PATH}/steamapps"
-        rsync "${RSYNC_OPTS[@]}" \
-            "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/steam-acf/" \
-            "${STEAM_LIBRARY_PATH}/steamapps/"
+    if ! ssh "${BACKUP_USER}@${BACKUP_HOST}" \
+            "test -d '${BACKUP_DEST}/steam-launchopts'" 2>/dev/null; then
+        echo "  [SKIP] options de lancement Steam absent du NAS"
+        return
     fi
+    if pgrep -x steam >/dev/null 2>&1; then
+        echo "  [WARN] Steam tourne — ferme-le complètement (icône systray > Quitter) avant de relancer le restore,"
+        echo "         sinon le fichier restauré sera écrasé au prochain démarrage de Steam."
+    fi
+    local userids
+    # shellcheck disable=SC2029
+    userids=$(ssh "${BACKUP_USER}@${BACKUP_HOST}" \
+        "ls -1 '${BACKUP_DEST}/steam-launchopts' 2>/dev/null") || return
+    while IFS= read -r userid; do
+        [[ -z "$userid" ]] && continue
+        local dest="$HOME/.local/share/Steam/userdata/$userid/config"
+        echo "  ← options de lancement Steam (user $userid)"
+        mkdir -p "$dest"
+        rsync "${RSYNC_OPTS[@]}" \
+            "${BACKUP_USER}@${BACKUP_HOST}:${BACKUP_DEST}/steam-launchopts/${userid}/config/localconfig.vdf" \
+            "$dest/"
+    done <<< "$userids"
 }
 
 # Construire la liste des items
@@ -115,19 +138,27 @@ for dir in "${BACKUP_DIRS[@]}"; do
 done
 ALL_ITEMS+=("localconf")
 ALL_LABELS+=("local.conf")
-if [[ -n "${STEAM_LIBRARY_PATH:-}" ]]; then
-    ALL_ITEMS+=("steam")
-    ALL_LABELS+=("manifestes Steam (.acf)")
+shopt -s nullglob
+_steam_vdf_count=( "$HOME/.local/share/Steam/userdata"/*/config/localconfig.vdf )
+shopt -u nullglob
+if [[ ${#_steam_vdf_count[@]} -gt 0 ]]; then
+    ALL_ITEMS+=("steam-launchopts")
+    ALL_LABELS+=("options de lancement Steam (localconfig.vdf)")
 fi
 
-# Menu de sélection
-echo ""
-echo "  0) Tout"
-for i in "${!ALL_LABELS[@]}"; do
-    echo "  $((i+1))) ${ALL_LABELS[$i]}"
-done
-echo ""
-read -rp "Choix [0-${#ALL_LABELS[@]}] : " choice
+# Menu de sélection — sans terminal (timer systemd), on prend tout
+if [[ -t 0 ]]; then
+    echo ""
+    echo "  0) Tout"
+    for i in "${!ALL_LABELS[@]}"; do
+        echo "  $((i+1))) ${ALL_LABELS[$i]}"
+    done
+    echo ""
+    read -rp "Choix [0-${#ALL_LABELS[@]}] : " choice
+else
+    choice=0
+    echo "Mode non interactif : tous les éléments sont traités."
+fi
 
 if [[ ! "$choice" =~ ^[0-9]+$ ]] || (( choice > ${#ALL_ITEMS[@]} )); then
     echo "[ERREUR] Choix invalide"
@@ -149,8 +180,8 @@ case "$MODE" in
                 backup_dir "${item#dir:}"
             elif [[ "$item" == "localconf" ]]; then
                 backup_localconf
-            elif [[ "$item" == "steam" ]]; then
-                backup_steam
+            elif [[ "$item" == "steam-launchopts" ]]; then
+                backup_steam_launchopts
             fi
         done
         echo "Backup terminé."
@@ -162,8 +193,8 @@ case "$MODE" in
                 restore_dir "${item#dir:}"
             elif [[ "$item" == "localconf" ]]; then
                 restore_localconf
-            elif [[ "$item" == "steam" ]]; then
-                restore_steam
+            elif [[ "$item" == "steam-launchopts" ]]; then
+                restore_steam_launchopts
             fi
         done
         echo "Restore terminé."
