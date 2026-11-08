@@ -154,12 +154,59 @@ folders partagés sont acceptés automatiquement.
 
 ## Snapshots Snapper
 
-Chaque opération pacman crée automatiquement un snapshot avant et après (via hooks).
+- **root** : un snapshot avant et après chaque opération pacman (hooks), 10 gardés.
+- **home** : timeline horaire, 12 horaires + 7 journaliers gardés (contre les suppressions accidentelles dans `~`).
+
+> Les snapshots sont sur le même disque : ce n'est **pas** un backup (voir `make backup`).
 
 ```bash
 snapper -c root list                    # lister les snapshots
-sudo snapper -c root undochange N..0   # rollback depuis le snapshot N
+snapper -c home list
+sudo snapper -c root undochange N..0    # annuler les changements depuis le snapshot N (système qui boote)
+snapper -c home undochange N..0 ~/Documents/fichier   # restaurer un fichier de ~
 ```
+
+### Restaurer quand le système ne boote plus
+
+Spécificités de ce setup :
+- **systemd-boot, `/boot` sur l'ESP (vfat)** : pas d'entrée « booter un snapshot », et le noyau n'est
+  **pas** dans les snapshots → après restauration, il faut réinstaller le noyau correspondant.
+- **`subvol=/@` est en dur dans fstab** : `snapper rollback` est sans effet, ne pas l'utiliser.
+
+**0. D'abord** : choisir l'entrée **linux-cachyos-lts** dans le menu systemd-boot. Si c'est le noyau
+principal qui casse, ça suffit pour redémarrer et corriger depuis le système.
+
+**Sinon, depuis une clé live CachyOS :**
+
+```bash
+# 1. Monter la racine btrfs (top-level)
+mount -o subvolid=5 /dev/nvme1n1p2 /mnt
+
+# 2. Choisir le snapshot N (date + description pre-pacman/post-pacman)
+grep -h -A1 '<num>\|<date>\|<description>' /mnt/@/.snapshots/*/info.xml
+
+# 3. Mettre l'actuel de côté, recréer @ depuis le snapshot N
+mv /mnt/@ /mnt/@broken
+btrfs subvolume snapshot /mnt/@broken/.snapshots/N/snapshot /mnt/@
+rmdir /mnt/@/.snapshots                     # dossier vide laissé par le snapshot
+mv /mnt/@broken/.snapshots /mnt/@/          # récupère l'historique des snapshots
+
+# 4. Remettre le noyau en accord avec le snapshot
+umount /mnt
+mount -o subvol=/@ /dev/nvme1n1p2 /mnt
+mount /dev/nvme1n1p1 /mnt/boot
+arch-chroot /mnt
+pacman -S linux-cachyos linux-cachyos-nvidia-open
+# sans réseau : pacman -U /var/cache/pacman/pkg/linux-cachyos-<version>…  (@cache n'est pas restauré)
+exit
+reboot
+
+# 5. Quand tout marche : supprimer l'ancien système
+mount -o subvolid=5 /dev/nvme1n1p2 /mnt && btrfs subvolume delete /mnt/@broken
+```
+
+`/home` (`@home`) n'est pas touché par cette procédure. Les noms de partitions (`nvme1n1p2` = btrfs,
+`nvme1n1p1` = ESP) sont ceux de nrl-dev : vérifier avec `lsblk -f` depuis la clé live.
 
 ## Maintenance
 

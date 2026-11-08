@@ -212,13 +212,37 @@ if ! snapper -c home list &>/dev/null 2>&1; then
     snapper -c home create-config /home
 fi
 
+# set_snapper_key FICHIER CLÉ VALEUR : remplace la clé, ou l'ajoute si absente
+set_snapper_key() {
+    if grep -q "^$2=" "$1"; then
+        sed -i "s|^$2=.*|$2=\"$3\"|" "$1"
+    else
+        echo "$2=\"$3\"" >> "$1"
+    fi
+}
+
+# root : snapshots pre/post pacman uniquement (hooks), 10 gardés
+# home : timeline horaire contre les suppressions accidentelles. Rétention courte
+#        car ~ bouge beaucoup (.cache, flatpak, Téléchargements) : un fichier
+#        supprimé n'occupe plus de place après au plus 7 jours.
 for config in root home; do
     cfg="/etc/snapper/configs/$config"
     [[ -f "$cfg" ]] || continue
-    sed -i "s|^TIMELINE_CREATE=.*|TIMELINE_CREATE=\"no\"|" "$cfg"
-    sed -i "s|^ALLOW_USERS=.*|ALLOW_USERS=\"$USER_NAME\"|" "$cfg"
-    limit="10"; [[ "$config" == "home" ]] && limit="5"
-    sed -i "s|^NUMBER_LIMIT=.*|NUMBER_LIMIT=\"$limit\"|" "$cfg"
+    set_snapper_key "$cfg" ALLOW_USERS "$USER_NAME"
+    if [[ "$config" == "root" ]]; then
+        set_snapper_key "$cfg" TIMELINE_CREATE no
+        set_snapper_key "$cfg" NUMBER_LIMIT 10
+    else
+        set_snapper_key "$cfg" TIMELINE_CREATE yes
+        set_snapper_key "$cfg" TIMELINE_CLEANUP yes
+        set_snapper_key "$cfg" TIMELINE_LIMIT_HOURLY 12
+        set_snapper_key "$cfg" TIMELINE_LIMIT_DAILY 7
+        set_snapper_key "$cfg" TIMELINE_LIMIT_WEEKLY 0
+        set_snapper_key "$cfg" TIMELINE_LIMIT_MONTHLY 0
+        set_snapper_key "$cfg" TIMELINE_LIMIT_QUARTERLY 0
+        set_snapper_key "$cfg" TIMELINE_LIMIT_YEARLY 0
+        set_snapper_key "$cfg" NUMBER_LIMIT 5
+    fi
     echo "  config $config mise à jour"
 done
 
@@ -227,6 +251,7 @@ install -m 644 "$SCRIPT_DIR/hooks/00-snapper-pre.hook"  /etc/pacman.d/hooks/
 install -m 644 "$SCRIPT_DIR/hooks/zz-snapper-post.hook" /etc/pacman.d/hooks/
 
 systemctl enable --now snapper-cleanup.timer
+systemctl enable --now snapper-timeline.timer
 
 echo ""
 echo "Configuration système terminée."
