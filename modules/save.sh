@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
-# make save : exporte les settings GNOME, puis commit + push de tout ce qui a changé.
+# make save : commit + push de tout ce qui a changé.
+# Les réglages GNOME ne sont plus exportés : gnome/settings.ini s'édite à la main (make gnome-diff).
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=modules/lib.sh
 source "$SCRIPT_DIR/modules/lib.sh"
 
 cd "$SCRIPT_DIR"
-
-echo "==> Export GNOME"
-bash "$SCRIPT_DIR/modules/update-gnome.sh"
-# Les settings viennent de cette machine : inutile de les recharger au prochain sync
-[[ -f "$STATE_DIR/gnome.sha" ]] && mark_done gnome
 
 if [[ -z "$(git status --porcelain)" ]]; then
     echo "Rien à sauver, le dépôt est à jour."

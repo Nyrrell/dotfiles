@@ -35,7 +35,7 @@ make packages   # paquets pacman + AUR + Flatpak + groupes (OBS, gaming…, choi
 make dotfiles   # symlinks via GNU Stow + git user config
 make fish       # shell par défaut
 make dev        # fnm + Node.js LTS
-make gnome      # settings GNOME (dconf)
+make gnome      # réglages GNOME (gnome/settings.ini) + extensions (gnome/extensions.txt)
 make syncthing  # peers et folders (nécessite SYNC_INTRODUCERS dans local.conf)
 make system     # wake-on-lan, pare-feu, snapper (sudo demandé automatiquement)
 make wireguard  # VPN WireGuard facultatif (nécessite WG_ENDPOINT dans local.conf)
@@ -44,7 +44,7 @@ make wireguard  # VPN WireGuard facultatif (nécessite WG_ENDPOINT dans local.co
 ## Au quotidien
 
 ```bash
-make save               # sur la machine où tu as modifié quelque chose : export GNOME + commit + push
+make save               # sur la machine où tu as modifié quelque chose : commit + push
 make sync               # sur l'autre machine : git pull + relance seulement les modules concernés
 make add PKG=htop       # ajoute un paquet à la bonne liste (pacman/AUR/Flathub) et l'installe
 make add PKG=obs-vkcapture-git GROUP=obs   # … ou à un groupe optionnel
@@ -52,7 +52,7 @@ make upgrade            # mise à jour système (paru -Syu + flatpak update)
 ```
 
 `make sync` compare un hash des entrées de chaque module (listes de paquets,
-`dconf-backup.ini`, units systemd, clés de `local.conf`…) à celui enregistré dans
+`gnome/settings.ini`, units systemd, clés de `local.conf`…) à celui enregistré dans
 `~/.local/state/dotfiles/` et ne relance que ce qui a changé. `make sync FORCE=1`
 relance tout.
 
@@ -65,7 +65,7 @@ Les choix propres à chaque machine (groupes `PACKAGE_GROUPS`, `ENABLE_WOL`,
 |------------------|--------------------------------------------------------------------------------|
 | `make install`   | Installation complète : ssh, packages, dotfiles, dev, GNOME, syncthing, system |
 | `make sync`      | `git pull` + relance seulement les modules dont les entrées ont changé         |
-| `make save`      | Export GNOME + commit + push                                                   |
+| `make save`      | Commit + push                                                                  |
 | `make add`       | `make add PKG=nom [GROUP=obs]` : ajoute un paquet à la bonne liste et l'installe |
 | `make upgrade`   | Mise à jour système (`paru -Syu` + `flatpak update`)                           |
 | `make packages`  | Installe paquets pacman + AUR + Flatpak + groupes interactifs (OBS, gaming…)   |
@@ -73,14 +73,14 @@ Les choix propres à chaque machine (groupes `PACKAGE_GROUPS`, `ENABLE_WOL`,
 | `make fish`      | Configure Fish comme shell par défaut                                          |
 | `make zsh`       | Configure Zsh comme shell par défaut                                           |
 | `make dev`       | Installe fnm + Node.js LTS + Corepack                                          |
-| `make gnome`     | Restaure les settings GNOME via dconf                                          |
+| `make gnome`     | Applique `gnome/settings.ini` et installe `gnome/extensions.txt`               |
+| `make gnome-diff`| Écarts entre les réglages GNOME de la machine et `gnome/settings.ini`          |
 | `make syncthing` | Configure les folders Syncthing (peers + folders versionnés)                   |
 | `make system`    | Config système : wake-on-lan, pare-feu, snapper (sudo automatique)             |
 | `make wireguard` | VPN WireGuard via NetworkManager, activation manuelle (skip si `WG_ENDPOINT` vide) |
 | `make ssh`       | Génère une clé SSH ed25519 si absente et affiche la clé publique               |
 | `make backup`    | Sauvegarde les données personnelles sur le NAS via rsync                       |
 | `make restore`   | Restaure les données personnelles depuis le NAS                                |
-| `make update`    | Snapshot des settings GNOME → gnome/dconf-backup.ini                           |
 | `make check`     | Vérifie que les dépendances système sont présentes                             |
 
 ## Structure
@@ -114,7 +114,8 @@ dotfiles/
 │       └── gaming.conf     # Gaming : Steam, protonup-qt, steamtinkerlaunch
 ├── local.conf.example      # Template de config machine (copier en local.conf)
 └── gnome/
-    └── dconf-backup.ini    # Settings GNOME (whitelist : thème, extensions, clavier…)
+    ├── settings.ini        # Réglages GNOME partagés, écrits à la main
+    └── extensions.txt      # Extensions installées et activées partout
 ```
 
 ## Configuration locale
@@ -229,13 +230,24 @@ mount -o subvolid=5 /dev/nvme1n1p2 /mnt && btrfs subvolume delete /mnt/@broken
 `/home` (`@home`) n'est pas touché par cette procédure. Les noms de partitions (`nvme1n1p2` = btrfs,
 `nvme1n1p1` = ESP) sont ceux de nrl-dev : vérifier avec `lsblk -f` depuis la clé live.
 
-## Maintenance
+## Réglages GNOME
 
-Avant une réinstallation, sauvegarder les settings GNOME :
+Rien n'est exporté automatiquement : le dépôt contient seulement ce qui est écrit à la main.
+
+- `gnome/settings.ini` : réglages partagés (clavier, thème, polices, raccourcis, réglages
+  des extensions…), appliqués par `dconf load`. Une clé absente du fichier reste propre à
+  chaque machine (favoris du dock, batterie, mise à l'échelle, veille…).
+- `gnome/extensions.txt` : extensions installées et activées partout. Une extension absente
+  de la liste n'est jamais touchée : on peut en tester librement.
+- `GNOME_EXTRA_EXTENSIONS=(…)` dans `local.conf` : extensions installées automatiquement
+  sur **cette machine seulement**. Leurs réglages peuvent aller dans `settings.ini` : sur
+  une machine sans l'extension, les clés sont écrites mais ne servent à rien.
+
+Pour reporter un réglage changé sur la machine :
 
 ```bash
-make update   # snapshot dconf → gnome/dconf-backup.ini
-git add -A && git commit -m "update gnome settings" && git push
+make gnome-diff   # ≠ valeur différente de settings.ini, + réglage absent du fichier
+# copier les lignes voulues dans gnome/settings.ini, puis make save
 ```
 
 ## Vérifications

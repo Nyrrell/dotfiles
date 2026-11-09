@@ -85,7 +85,8 @@ module_inputs() {
             cat modules/03-dotfiles.sh
             ;;
         gnome)
-            cat gnome/dconf-backup.ini modules/06-gnome.sh
+            cat gnome/settings.ini gnome/extensions.txt modules/06-gnome.sh
+            declare -p GNOME_EXTRA_EXTENSIONS 2>/dev/null || true
             ;;
         system)
             cat systemd/system/* hooks/* ssh/*.tpl modules/07-system.sh

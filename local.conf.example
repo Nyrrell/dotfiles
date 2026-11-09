@@ -63,6 +63,10 @@ OPTIONAL_PREBUILT_PACKAGES=()                   # format: "pkgname|https://url/p
 
 OPTIONAL_FLATPAK_PACKAGES=()
 
+# Extensions GNOME installées et activées sur CETTE machine seulement (en plus de
+# gnome/extensions.txt). UUID via : gnome-extensions list --enabled
+GNOME_EXTRA_EXTENSIONS=()                       # ex: (hidetopbar@mathieu.bidon.ca)
+
 # --- Syncthing ---
 SYNC_FOLDERS=(
     # format: "id|label|path|type|rescan_interval(optionnel, défaut 3600s)"

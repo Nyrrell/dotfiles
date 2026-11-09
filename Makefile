@@ -1,4 +1,4 @@
-.PHONY: install sync save add upgrade packages dotfiles fish zsh dev gnome goa syncthing system wireguard ssh backup restore update lint check help
+.PHONY: install sync save add upgrade packages dotfiles fish zsh dev gnome gnome-diff goa syncthing system wireguard ssh backup restore lint check help
 
 ifeq ($(shell id -u),0)
 $(error [ERREUR] Ne pas lancer avec sudo. Exécute simplement : make $(MAKECMDGOALS))
@@ -40,7 +40,7 @@ install: ## Installation complète dans le bon ordre
 sync: ## Au quotidien : git pull + relance seulement ce qui a changé (FORCE=1 pour tout)
 	@bash $(DIR)modules/sync.sh
 
-save: ## Au quotidien : export GNOME + commit + push
+save: ## Au quotidien : commit + push
 	@bash $(DIR)modules/save.sh
 
 add: ## Ajoute un paquet à la bonne liste et l'installe : make add PKG=nom [GROUP=obs]
@@ -72,10 +72,13 @@ dev: ## Installe fnm + Node.js LTS + Corepack
 	$(CHECK_GIT)
 	@bash $(DIR)modules/05-dev.sh
 
-gnome: ## Restaure les settings GNOME via dconf
+gnome: ## Applique gnome/settings.ini et installe gnome/extensions.txt
 	$(CHECK_GIT)
 	@bash $(DIR)modules/06-gnome.sh
 	@bash $(DIR)modules/sync.sh --mark gnome
+
+gnome-diff: ## Écarts entre les réglages GNOME de la machine et gnome/settings.ini
+	@bash $(DIR)modules/gnome-diff.sh
 
 goa: ## Configure un compte Cal+Card via GOA Nextcloud
 	$(CHECK_GIT)
@@ -106,10 +109,6 @@ backup: ## Sauvegarde les données personnelles sur le NAS
 restore: ## Restaure les données personnelles depuis le NAS
 	$(CHECK_GIT)
 	@bash $(DIR)modules/08-backup.sh restore
-
-update: ## Sauvegarde les settings GNOME utiles (thème, extensions, clavier…)
-	$(CHECK_GIT)
-	@bash $(DIR)modules/update-gnome.sh
 
 lint: ## Lance shellcheck sur les modules
 	@if ! command -v shellcheck >/dev/null 2>&1; then \

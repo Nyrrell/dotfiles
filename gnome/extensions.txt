@@ -1,0 +1,9 @@
+# Extensions GNOME installées et activées par make gnome (une UUID par ligne).
+# Une extension absente d'ici n'est jamais touchée : on peut en tester librement.
+# Trouver une UUID : gnome-extensions list --enabled
+
+apps-menu@gnome-shell-extensions.gcampax.github.com     # menu Applications dans la barre
+system-monitor@gnome-shell-extensions.gcampax.github.com # CPU / RAM / réseau dans la barre
+Bluetooth-Battery-Meter@maniacx.github.com              # batterie des appareils Bluetooth
+caffeine@patapon.info                                   # empêche la mise en veille
+quick-settings-audio-panel@rayzeq.github.io             # volumes par application dans les réglages rapides
