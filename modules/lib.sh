@@ -6,7 +6,8 @@ DOTFILES_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOCAL_CONF="$DOTFILES_ROOT/local.conf"
 # État par machine (hors dépôt) : hash des entrées de chaque module déjà appliqué
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles"
-# Modules suivis par `make sync`, dans l'ordre d'exécution
+# Modules suivis par `make sync`, dans l'ordre d'exécution (utilisé par sync.sh)
+# shellcheck disable=SC2034
 SYNC_MODULES=(packages dotfiles gnome system syncthing)
 
 # --- local.conf ---------------------------------------------------------------

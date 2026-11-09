@@ -43,7 +43,8 @@ if [[ -n "$GROUP" ]]; then
         aur) var=GROUP_AUR ;;
         flatpak) var=GROUP_FLATPAK ;;
     esac
-    # shellcheck disable=SC2034
+    # SC2034 : tableaux remplis par le source ; SC1090 : fichier de groupe choisi à l'exécution
+    # shellcheck disable=SC2034,SC1090
     current=$(GROUP_PACMAN=() GROUP_AUR=() GROUP_FLATPAK=(); source "$group_file"; declare -n arr="$var"; printf '%s\n' "${arr[@]}")
     if grep -qFx "$PKG" <<<"$current"; then
         echo "$PKG est déjà dans le groupe $GROUP ($var)."
