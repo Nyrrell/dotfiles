@@ -36,6 +36,22 @@ BACKUP_DIRS=(
 GOA_USERNAME=""                                 # vide = skip ; nom d'utilisateur du serveur (≠ email selon le fournisseur)
 GOA_URL=""                                      # ex: https://sync.infomaniak.com/
 
+# --- VPN WireGuard (make wireguard) ---
+# Connexion NetworkManager à activation manuelle : nmcli connection up "$WG_CONN_NAME"
+# Ne pas l'activer à la maison : WG_ALLOWED_IPS contient le LAN, qui passerait par le tunnel.
+WG_ENDPOINT=""                                  # vide = skip ; ex: vpn.exemple.com:51820
+WG_CONN_NAME="Maison"                           # nom de la connexion NetworkManager
+WG_IFACE="wg0"
+WG_ADDRESS=""                                   # IP de CETTE machine dans le tunnel, ex: 10.100.0.2/32
+WG_PEER_PUBKEY=""                               # clé PUBLIQUE du serveur (pas de secret ici)
+WG_ALLOWED_IPS="192.168.1.0/24;10.100.0.0/24"   # séparées par ';'
+WG_DNS=""                                       # ex: 10.100.0.1
+WG_DNS_SEARCH=""                                # ex: ~exemple.com
+WG_KEEPALIVE="25"
+# Vide = nouvelle clé générée pour cette machine (sa clé publique est affichée,
+# à ajouter sur le serveur). Sinon chemin d'un fichier contenant une clé privée existante.
+WG_PRIVATE_KEY_FILE=""
+
 # --- Paquets machine-specific ---
 # Groupes optionnels (packages/groups/<nom>.conf) installés sur cette machine.
 # Un groupe absent des deux listes est demandé une fois, puis la réponse est ajoutée ici.

@@ -1,4 +1,4 @@
-.PHONY: install sync save add upgrade packages dotfiles fish zsh dev gnome goa syncthing system ssh backup restore update lint check help
+.PHONY: install sync save add upgrade packages dotfiles fish zsh dev gnome goa syncthing system wireguard ssh backup restore update lint check help
 
 ifeq ($(shell id -u),0)
 $(error [ERREUR] Ne pas lancer avec sudo. Exécute simplement : make $(MAKECMDGOALS))
@@ -33,6 +33,7 @@ install: ## Installation complète dans le bon ordre
 	@$(MAKE) goa
 	@$(MAKE) syncthing
 	@$(MAKE) system
+	@$(MAKE) wireguard
 	@echo ""
 	@echo "Installation terminée. Redémarre la session pour appliquer tous les changements."
 
@@ -89,6 +90,10 @@ syncthing: ## Configure les folders Syncthing (peers + KeePass, Documents...)
 	$(CHECK_GIT)
 	@bash $(DIR)modules/09-syncthing.sh
 	@bash $(DIR)modules/sync.sh --mark syncthing
+
+wireguard: ## VPN WireGuard via NetworkManager, activation manuelle (skip si WG_ENDPOINT vide)
+	$(CHECK_GIT)
+	@bash $(DIR)modules/11-wireguard.sh
 
 ssh: ## Génère une clé SSH ed25519 si absente et affiche la clé publique
 	$(CHECK_GIT)

@@ -38,6 +38,7 @@ make dev        # fnm + Node.js LTS
 make gnome      # settings GNOME (dconf)
 make syncthing  # peers et folders (nécessite SYNC_INTRODUCERS dans local.conf)
 make system     # wake-on-lan, pare-feu, snapper (sudo demandé automatiquement)
+make wireguard  # VPN WireGuard facultatif (nécessite WG_ENDPOINT dans local.conf)
 ```
 
 ## Au quotidien
@@ -75,6 +76,7 @@ Les choix propres à chaque machine (groupes `PACKAGE_GROUPS`, `ENABLE_WOL`,
 | `make gnome`     | Restaure les settings GNOME via dconf                                          |
 | `make syncthing` | Configure les folders Syncthing (peers + folders versionnés)                   |
 | `make system`    | Config système : wake-on-lan, pare-feu, snapper (sudo automatique)             |
+| `make wireguard` | VPN WireGuard via NetworkManager, activation manuelle (skip si `WG_ENDPOINT` vide) |
 | `make ssh`       | Génère une clé SSH ed25519 si absente et affiche la clé publique               |
 | `make backup`    | Sauvegarde les données personnelles sur le NAS via rsync                       |
 | `make restore`   | Restaure les données personnelles depuis le NAS                                |
@@ -124,6 +126,25 @@ cp local.conf.example local.conf
 ```
 
 `local.conf` est **obligatoire** pour les targets `packages`, `backup`, `restore`, `system` et `syncthing`.
+
+## VPN WireGuard
+
+Facultatif : `make wireguard` ne fait rien tant que `WG_ENDPOINT` est vide dans
+`local.conf`. Il crée une connexion NetworkManager **sans autoconnect**, à activer
+à la main depuis l'extérieur :
+
+```bash
+nmcli connection up Maison     # nmcli connection down Maison pour couper
+```
+
+Ne pas l'activer à la maison : `WG_ALLOWED_IPS` contient le LAN (192.168.1.0/24),
+qui serait routé dans le tunnel et deviendrait injoignable.
+
+La clé privée n'est jamais dans le dépôt. Sur une nouvelle machine, une clé est
+générée et sa clé publique affichée : l'ajouter comme peer sur le serveur, avec
+une `WG_ADDRESS` propre à la machine. Pour réutiliser une clé existante, renseigner
+`WG_PRIVATE_KEY_FILE`. Si la connexion existe déjà, seuls les paramètres non secrets
+sont réappliqués.
 
 ## Mount NAS (`~/nas`)
 
