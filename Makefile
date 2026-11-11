@@ -1,5 +1,8 @@
 .PHONY: install sync save add upgrade packages dotfiles fish zsh dev gnome gnome-diff goa syncthing system lan-ca wireguard ssh backup restore lint check help
 
+# `make` seul affiche l'aide au lieu de lancer l'installation complète
+.DEFAULT_GOAL := help
+
 ifeq ($(shell id -u),0)
 $(error [ERREUR] Ne pas lancer avec sudo. Exécute simplement : make $(MAKECMDGOALS))
 endif
