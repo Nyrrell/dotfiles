@@ -37,6 +37,10 @@ BACKUP_DIRS=(
 GOA_USERNAME=""                                 # vide = skip ; nom d'utilisateur du serveur (≠ email selon le fournisseur)
 GOA_URL=""                                      # ex: https://sync.infomaniak.com/
 
+# --- Certificat LAN du serveur (make lan-ca) ---
+# Racine des vhosts internes *.int, servie au LAN/VPN seulement. Vide = skip.
+LAN_CA_URL=""                                   # ex: https://exemple.com/ca.crt
+
 # --- VPN WireGuard (make wireguard) ---
 # Connexion NetworkManager à activation manuelle : nmcli connection up "$WG_CONN_NAME"
 # Ne pas l'activer à la maison : WG_ALLOWED_IPS contient le LAN, qui passerait par le tunnel.

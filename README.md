@@ -38,6 +38,7 @@ make dev        # fnm + Node.js LTS
 make gnome      # réglages GNOME (gnome/settings.ini) + extensions (gnome/extensions.txt)
 make syncthing  # peers et folders (nécessite SYNC_INTRODUCERS dans local.conf)
 make system     # wake-on-lan, udev Keychron, pare-feu, snapper (sudo demandé automatiquement)
+make lan-ca     # certificat LAN du serveur (nécessite LAN_CA_URL dans local.conf, depuis le LAN/VPN)
 make wireguard  # VPN WireGuard facultatif (nécessite WG_ENDPOINT dans local.conf)
 ```
 
@@ -77,6 +78,7 @@ Les choix propres à chaque machine (groupes `PACKAGE_GROUPS`, `ENABLE_WOL`,
 | `make gnome-diff`| Écarts entre les réglages GNOME de la machine et `gnome/settings.ini`          |
 | `make syncthing` | Configure les folders Syncthing (peers + folders versionnés)                   |
 | `make system`    | Config système : wake-on-lan, udev Keychron, pare-feu, snapper (sudo auto)     |
+| `make lan-ca`    | Certificat LAN du serveur dans le magasin système (curl, Chrome, Firefox) ; skip si `LAN_CA_URL` vide |
 | `make wireguard` | VPN WireGuard via NetworkManager, activation manuelle (skip si `WG_ENDPOINT` vide) |
 | `make ssh`       | Génère une clé SSH ed25519 si absente et affiche la clé publique               |
 | `make backup`    | Sauvegarde les données personnelles sur le NAS via rsync                       |
