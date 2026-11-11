@@ -17,6 +17,7 @@ MODE="${1:-backup}"
 
 if ! ssh -o ConnectTimeout=5 -o BatchMode=yes "${BACKUP_USER}@${BACKUP_HOST}" true 2>/dev/null; then
     echo "[ERREUR] Impossible de joindre ${BACKUP_USER}@${BACKUP_HOST} — NAS inaccessible ou clé SSH manquante."
+    echo "         Hors de chez toi : nmcli connection up \"${WG_CONN_NAME:-Maison}\" puis relance."
     exit 1
 fi
 

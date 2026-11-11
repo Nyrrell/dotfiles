@@ -20,8 +20,7 @@ EXTRA_MOUNTS=(
 # --- Backup / NAS ---
 BACKUP_HOST="CHANGEME"                          # hostname ou IP du NAS
 NAS_REMOTE_PATH="/"                             # chemin distant monté sur ~/nas (défaut: /)
-NAS_WAN_HOST=""                                 # vide = pas de fallback
-NAS_WAN_PORT="22"                               # port SSH exposé sur WAN
+# Hors de chez soi : pas de SSH exposé sur Internet, activer le VPN (make wireguard).
 BACKUP_USER="$(whoami)"
 BACKUP_DEST="/raid/backups/$(hostname)"
 

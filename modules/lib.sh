@@ -89,9 +89,9 @@ module_inputs() {
             declare -p GNOME_EXTRA_EXTENSIONS 2>/dev/null || true
             ;;
         system)
-            cat systemd/system/* hooks/* ssh/*.tpl udev/* modules/07-system.sh
+            cat systemd/system/* hooks/* udev/* modules/07-system.sh
             declare -p LAN_SUBNET EXTRA_MOUNTS BACKUP_HOST NAS_REMOTE_PATH \
-                NAS_WAN_HOST NAS_WAN_PORT ENABLE_WOL ENABLE_UFW ENABLE_KEYCHRON 2>/dev/null || true
+                ENABLE_WOL ENABLE_UFW ENABLE_KEYCHRON 2>/dev/null || true
             ;;
         syncthing)
             cat modules/09-syncthing.sh

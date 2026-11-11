@@ -157,6 +157,10 @@ sont réappliqués.
 SSHFS sur `~/nas` (automount, démontage après 5 min d'inactivité). La clé
 `~/.ssh/id_ed25519` doit être autorisée sur le NAS.
 
+Hors de chez soi, le NAS n'est joignable que par le VPN (aucun SSH exposé sur
+Internet) : `nmcli connection up Maison`, puis `~/nas` et `make backup`
+fonctionnent comme sur le LAN.
+
 ## Dotfiles (GNU Stow)
 
 Pour redéployer manuellement :

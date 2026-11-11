@@ -169,29 +169,13 @@ else
     echo "  Automount NAS activé sur $NAS_MOUNT_PATH"
 fi
 
-# --- NAS WAN fallback (optionnel) ---
+# --- Ancien fallback SSH WAN (retiré) ---
+# Le NAS n'est plus exposé en SSH sur Internet : hors de chez soi, on passe par le
+# VPN (nmcli connection up "$WG_CONN_NAME"). On nettoie le fichier des anciennes installs.
 SSH_FALLBACK_FILE=/etc/ssh/ssh_config.d/40-nas-fallback.conf
-if [[ -n "${NAS_WAN_HOST:-}" ]] && [[ "$NAS_HOST" != "CHANGEME" ]]; then
-    echo "==> NAS fallback WAN"
-    NAS_WAN_HOST_VAL=$(eval echo "$NAS_WAN_HOST")
-    NAS_WAN_PORT_VAL="${NAS_WAN_PORT:-22}"
-
-    if [[ -f /etc/ssh/ssh_config ]] && ! grep -qE '^\s*Include\s+/etc/ssh/ssh_config\.d/' /etc/ssh/ssh_config; then
-        echo "Include /etc/ssh/ssh_config.d/*.conf" >> /etc/ssh/ssh_config
-    fi
-
-    mkdir -p /etc/ssh/ssh_config.d
-    sed \
-        -e "s|@NAS_HOST@|$NAS_HOST|g" \
-        -e "s|@NAS_WAN_HOST@|$NAS_WAN_HOST_VAL|g" \
-        -e "s|@NAS_WAN_PORT@|$NAS_WAN_PORT_VAL|g" \
-        "$SCRIPT_DIR/ssh/nas-fallback.conf.tpl" \
-        > "$SSH_FALLBACK_FILE"
-    chmod 644 "$SSH_FALLBACK_FILE"
-    echo "  Fallback: $NAS_HOST → $NAS_WAN_HOST_VAL:$NAS_WAN_PORT_VAL (si LAN injoignable)"
-elif [[ -f "$SSH_FALLBACK_FILE" ]]; then
+if [[ -f "$SSH_FALLBACK_FILE" ]]; then
     rm -f "$SSH_FALLBACK_FILE"
-    echo "==> NAS fallback WAN désactivé (NAS_WAN_HOST vide) — fichier nettoyé"
+    echo "==> Ancien fallback SSH WAN du NAS retiré ($SSH_FALLBACK_FILE) : passer par le VPN"
 fi
 
 # --- Pare-feu (ufw) ---
