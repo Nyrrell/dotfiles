@@ -11,16 +11,22 @@ DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 define CHECK_GIT
 @git fetch origin --quiet 2>/dev/null || true; \
-LOCAL=$$(git rev-parse HEAD 2>/dev/null); \
-REMOTE=$$(git rev-parse @{u} 2>/dev/null); \
-if [ -n "$$REMOTE" ] && [ "$$LOCAL" != "$$REMOTE" ]; then \
-	echo "[WARN] Le dépôt n'est pas à jour avec origin"; \
+set -- $$(git rev-list --left-right --count 'HEAD...@{u}' 2>/dev/null || echo 0 0); \
+_ahead=$$1; _behind=$$2; \
+if [ "$$_behind" -gt 0 ] && [ "$$_ahead" -gt 0 ]; then \
+	echo "[WARN] Dépôt divergé : $$_ahead commit(s) local(aux), $$_behind distant(s) — git pull --rebase puis git push"; \
+	read -rp "Continuer quand même ? [y/N] " _git_answer; \
+	case "$$_git_answer" in y|Y) ;; *) exit 1 ;; esac; \
+elif [ "$$_behind" -gt 0 ]; then \
+	echo "[WARN] $$_behind commit(s) distant(s) pas encore récupéré(s)"; \
 	printf "  c) Continuer\n  u) Mettre à jour (git pull)\n  q) Abandonner\n"; \
 	read -rp "Choix [c/u/q] : " _git_answer; \
 	case "$$_git_answer" in \
-		u) git pull ;; \
+		u) git pull --ff-only ;; \
 		q) exit 1 ;; \
 	esac; \
+elif [ "$$_ahead" -gt 0 ]; then \
+	echo "[INFO] $$_ahead commit(s) local(aux) non poussé(s) — git push"; \
 fi
 endef
 
