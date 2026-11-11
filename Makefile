@@ -84,7 +84,7 @@ goa: ## Configure un compte Cal+Card via GOA Nextcloud
 	$(CHECK_GIT)
 	@bash $(DIR)modules/10-goa.sh
 
-system: ## Config système : wake-on-lan, pare-feu, snapper (sudo demandé automatiquement)
+system: ## Config système : wake-on-lan, udev Keychron, pare-feu, snapper (sudo demandé automatiquement)
 	$(CHECK_GIT)
 	@bash $(DIR)modules/07-system.sh
 	@bash $(DIR)modules/sync.sh --mark system

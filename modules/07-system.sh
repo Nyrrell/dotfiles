@@ -25,6 +25,24 @@ else
     echo "  [SKIP] Wake-on-LAN ignoré"
 fi
 
+# --- Règle udev Keychron (Launcher / VIA) ---
+echo "==> Clavier Keychron"
+KEYCHRON_RULE=/etc/udev/rules.d/50-keychron.rules
+detect_once ENABLE_KEYCHRON test -f "$KEYCHRON_RULE"
+ask_once ENABLE_KEYCHRON "Installer la règle udev Keychron ? (config du clavier via Launcher/VIA)"
+if is_yes ENABLE_KEYCHRON; then
+    install -m 644 "$SCRIPT_DIR/udev/50-keychron.rules" "$KEYCHRON_RULE"
+    udevadm control --reload-rules
+    udevadm trigger --subsystem-match=hidraw
+    echo "  Règle installée : $KEYCHRON_RULE"
+elif [[ -f "$KEYCHRON_RULE" ]]; then
+    rm -f "$KEYCHRON_RULE"
+    udevadm control --reload-rules
+    echo "  Règle Keychron retirée (ENABLE_KEYCHRON=no)"
+else
+    echo "  [SKIP] Règle Keychron ignorée"
+fi
+
 # --- Disques additionnels (fstab) ---
 echo "==> Disques additionnels"
 FSTAB_BEGIN="# >>> dotfiles EXTRA_MOUNTS >>>"

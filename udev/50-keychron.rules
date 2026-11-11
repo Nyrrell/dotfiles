@@ -1,0 +1,4 @@
+# Claviers Keychron (vendor 3434) : accès hidraw pour l'utilisateur de la session
+# active, nécessaire pour Keychron Launcher / VIA (WebHID dans Chromium).
+# Le préfixe doit rester < 73 : le tag uaccess est traité par 73-seat-late.rules.
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", TAG+="uaccess"

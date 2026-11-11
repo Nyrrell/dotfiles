@@ -6,6 +6,7 @@ LAN_SUBNET="192.168.1.0/24"
 # Laisser vide : la question est posée une fois par make system, puis mémorisée ici.
 ENABLE_WOL=""                                   # yes|no — Wake-on-LAN (filaire)
 ENABLE_UFW=""                                   # yes|no — activer le pare-feu ufw
+ENABLE_KEYCHRON=""                              # yes|no — règle udev Keychron (Launcher/VIA)
 
 # --- Disques additionnels (fstab) ---
 # format: "UUID|mountpoint|fstype|options"
