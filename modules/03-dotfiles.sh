@@ -29,11 +29,23 @@ clear_stow_conflicts() {
     done < <(find "$pkg" -type f)
 }
 
+# fish_variables = état local de fish (variables universelles), réécrit en permanence :
+# il ne doit pas être un symlink stow, sinon chaque restow le fait disparaître sous
+# les shells ouverts, qui perdent alors leurs variables universelles (pure, done…).
+# Migration : remplacer l'ancien symlink par un vrai fichier et le sortir du paquet.
+fish_vars_repo="$DOTFILES_DIR/fish/.config/fish/fish_variables"
+fish_vars_home="$HOME/.config/fish/fish_variables"
+if [[ -L "$fish_vars_home" && "$(readlink -f "$fish_vars_home")" == "$fish_vars_repo" ]]; then
+    rm "$fish_vars_home"
+    [[ -s "$fish_vars_repo" ]] && cp -p "$fish_vars_repo" "$fish_vars_home"
+fi
+rm -f "$fish_vars_repo"
+
 for pkg in fish zsh git environment profile systemd ssh; do
     if [[ -d "$pkg" ]]; then
         echo "Stow: $pkg"
         clear_stow_conflicts "$pkg"
-        stow --restow --no-folding --target="$HOME" "$pkg"
+        stow --restow --no-folding --ignore='fish_variables' --target="$HOME" "$pkg"
     fi
 done
 
