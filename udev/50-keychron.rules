@@ -2,3 +2,7 @@
 # active, nécessaire pour Keychron Launcher / VIA (WebHID dans Chromium).
 # Le préfixe doit rester < 73 : le tag uaccess est traité par 73-seat-late.rules.
 KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", TAG+="uaccess"
+
+# Mise à jour du firmware : le clavier redémarre en bootloader STM32 DFU (0483:df11),
+# flashé par le Launcher via WebUSB — même règle que celle fournie par le paquet qmk.
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", TAG+="uaccess"

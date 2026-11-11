@@ -105,6 +105,7 @@ dotfiles/
 │   ├── ssh/    → ~/.ssh/config
 │   └── bin/    → ~/.local/share/bin/
 ├── udev/                   # Règles udev (Keychron, optionnel via make system)
+├── keychron/               # Exports de config clavier (Keychron Launcher)
 ├── hooks/                  # Hooks pacman (copiés par make system)
 ├── packages/
 │   ├── pacman.txt          # Paquets natifs
