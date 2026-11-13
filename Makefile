@@ -1,4 +1,4 @@
-.PHONY: install sync save add upgrade packages dotfiles fish zsh dev gnome gnome-diff goa syncthing system lan-ca wireguard ssh backup restore lint check help
+.PHONY: install sync save add upgrade packages dotfiles fish zsh dev github gnome gnome-diff goa syncthing system lan-ca wireguard ssh backup restore lint check help
 
 # `make` seul affiche l'aide au lieu de lancer l'installation complète
 .DEFAULT_GOAL := help
@@ -38,6 +38,7 @@ install: ## Installation complète dans le bon ordre
 	@$(MAKE) dotfiles
 	@$(MAKE) fish
 	@$(MAKE) dev
+	@$(MAKE) github
 	@$(MAKE) gnome
 	@$(MAKE) goa
 	@$(MAKE) syncthing
@@ -81,6 +82,10 @@ zsh: ## Configure Zsh comme shell par défaut
 dev: ## Installe fnm + Node.js LTS + Corepack
 	$(CHECK_GIT)
 	@bash $(DIR)modules/05-dev.sh
+
+github: ## Connecte gh à GitHub (navigateur) et désactive sa télémétrie
+	$(CHECK_GIT)
+	@bash $(DIR)modules/13-github.sh
 
 gnome: ## Applique gnome/settings.ini et installe gnome/extensions.txt
 	$(CHECK_GIT)

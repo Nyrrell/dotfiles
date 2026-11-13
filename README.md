@@ -35,6 +35,7 @@ make packages   # paquets pacman + AUR + Flatpak + groupes (OBS, gaming…, choi
 make dotfiles   # symlinks via GNU Stow + git user config
 make fish       # shell par défaut
 make dev        # fnm + Node.js LTS
+make github     # gh : télémétrie coupée, réglages, connexion au compte (navigateur)
 make gnome      # réglages GNOME (gnome/settings.ini) + extensions (gnome/extensions.txt)
 make syncthing  # peers et folders (nécessite SYNC_INTRODUCERS dans local.conf)
 make system     # wake-on-lan, udev Keychron, pare-feu, snapper (sudo demandé automatiquement)
@@ -74,6 +75,7 @@ Les choix propres à chaque machine (groupes `PACKAGE_GROUPS`, `ENABLE_WOL`,
 | `make fish`      | Configure Fish comme shell par défaut                                          |
 | `make zsh`       | Configure Zsh comme shell par défaut                                           |
 | `make dev`       | Installe fnm + Node.js LTS + Corepack                                          |
+| `make github`    | Config gh (télémétrie off, pager delta, alias) + `gh auth login` si besoin     |
 | `make gnome`     | Applique `gnome/settings.ini` et installe `gnome/extensions.txt`               |
 | `make gnome-diff`| Écarts entre les réglages GNOME de la machine et `gnome/settings.ini`          |
 | `make syncthing` | Configure les folders Syncthing (peers + folders versionnés)                   |
